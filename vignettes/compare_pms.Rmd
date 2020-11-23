@@ -17,7 +17,7 @@ knitr::opts_chunk$set(
 ```
 
 ```{r setup}
-library(cyclingpoweR)
+library(cyclingpower)
 library(dplyr)
 library(ggplot2)
 library(tidylog)
@@ -32,8 +32,8 @@ kickr_url <- "Monitor_kickr.fit"
 pm_url <- "Monitor_4iiii.gpx"
 
 # ==== read data ====
-kickr_data <- cyclingpoweR::read_file(glue::glue("{folder}{kickr_url}"))
-pm_data <- cyclingpoweR::read_file(glue::glue("{folder}{pm_url}"))
+kickr_data <- cyclingpower::read_file(glue::glue("{folder}{kickr_url}"))
+pm_data <- cyclingpower::read_file(glue::glue("{folder}{pm_url}"))
 
 pm_power_data <-
   pm_data %>%

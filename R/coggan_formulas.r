@@ -5,7 +5,7 @@
 #' @return
 #' @export
 normalised_power <- function(ride_data) {
-  mean(zoo::rollmean(ride_data$power, 30) ^ 4) ^ 0.25
+  mean(zoo::rollmean(ride_data$power, 30)^4)^0.25
 }
 
 #' average_power

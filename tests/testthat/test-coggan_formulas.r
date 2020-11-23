@@ -1,8 +1,8 @@
-library(cyclingpoweR)
+library(cyclingpower)
 
 
 test_that("Coggan calculations", {
-  test_data <- read_file(system.file("inst", "extdata", "power1.fit", package = "cyclingpoweR"))
+  test_data <- read_file(system.file("inst", "extdata", "power1.fit", package = "cyclingpower"))
   ftp <- 275
 
   expect_lt(abs(average_power(test_data) - 189), 1)
