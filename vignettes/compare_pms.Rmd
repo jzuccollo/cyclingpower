@@ -1,0 +1,106 @@
+---
+title: "Compare 4iiii, Kickr, and Stages"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{compare_pms}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  echo = FALSE,
+  message = FALSE
+)
+```
+
+```{r setup}
+library(cyclingpoweR)
+library(dplyr)
+library(ggplot2)
+library(tidylog)
+library(glue)
+
+ggplot2::theme_set(ggplot2::theme_minimal())
+```
+
+```{r read_data}
+folder <- "~/Downloads/"
+kickr_url <- "Monitor_kickr.fit"
+pm_url <- "Monitor_4iiii.gpx"
+
+# ==== read data ====
+kickr_data <- cyclingpoweR::read_file(glue::glue("{folder}{kickr_url}"))
+pm_data <- cyclingpoweR::read_file(glue::glue("{folder}{pm_url}"))
+
+pm_power_data <-
+  pm_data %>%
+  tidylog::select(time, power)
+
+kickr_power_data <-
+  kickr_data %>%
+  tidylog::select(timestamp, power) %>%
+  tidylog::rename(time = timestamp)
+
+alldata <-
+  tidylog::left_join(kickr_power_data, pm_power_data, by = "time") %>%
+  tidylog::rename(
+    power_kickr = power.x,
+    power_4iiii = power.y
+  )
+```
+
+```{r descriptive_stats}
+alldata %>%
+  skimr::skim() %>%
+  knitr::kable()
+```
+
+```{r time_series_comparison}
+alldata %>%
+  tidylog::pivot_longer(
+    -time,
+    names_to = "source",
+    values_to = "power"
+  ) %>%
+  ggplot2::ggplot(ggplot2::aes(x = time, y = power, colour = source)) +
+  tidyquant::geom_ma(n = 30, linetype = "solid", size = 1) +
+  ggplot2::geom_line(alpha = 0.8) +
+  ggplot2::labs(
+    x = "Time",
+    y = "Power (watts)",
+    title = "Comparison of power data across sources",
+    subtitle = "1-second power and 30-second moving average"
+  ) +
+  ggplot2::scale_color_brewer(type = "qual")
+```
+
+```{r distribution_of_difference}
+alldata %>%
+  tidylog::mutate(power_diff = power_4iiii - power_kickr) %>%
+  tidylog::drop_na(power_diff) %>%
+  ggplot2::ggplot(aes(x = power_diff)) +
+  ggplot2::geom_histogram() +
+  ggplot2::geom_vline(ggplot2::aes(xintercept = median(power_diff)), linetype = "dashed") +
+  ggplot2::geom_text(
+    ggplot2::aes(
+      x = median(power_diff),
+      y = 45,
+      label = glue::glue(
+        "Median difference: {median(power_diff)} watts \\
+      ({scales::comma(100 * median(power_diff) / median(power_kickr))}%)"
+      )
+    ),
+    hjust = 0,
+    nudge_x = 2
+  ) +
+  ggplot2::scale_colour_brewer(type = "qual") +
+  ggplot2::labs(
+    x = "Difference in power (4iiii - Kickr Core)",
+    y = "Frequency",
+    title = "Distribution of difference in power",
+    subtitle = "1-second differences in power, where power is recorded on both devices"
+  )
+```
