@@ -59,3 +59,29 @@ compare_distribution <- function(rundata, pm1, pm2) {
       subtitle = "1-second differences in power, where power is recorded on both devices"
     )
 }
+
+
+#' diff_by_var
+#'
+#' @param rundata tbl
+#' @param pm1 var First power variable
+#' @param pm2 var Second power variable
+#' @param by var x var to plot diff against
+#'
+#' @return
+diff_by_var <- function(rundata, pm1, pm2, by) {
+  rundata %>%
+    tidylog::drop_na() %>%
+    tidylog::mutate(power_diff = {{ pm1 }} - {{ pm2 }}) %>%
+    ggplot2::ggplot(ggplot2::aes(x = {{ by }}, y = power_diff)) +
+    ggplot2::geom_hline(yintercept = 0, linetype = "dashed") +
+    ggplot2::geom_point(alpha = 0.3) +
+    ggplot2::geom_smooth() +
+    ggplot2::scale_colour_brewer() +
+    ggplot2::labs(
+      y = glue::glue("Difference in power (power meter - Kickr Core)"),
+      x = "by_var",
+      title = "Difference in power by by_var",
+      subtitle = "1-second differences in power, where power is recorded on both devices"
+    )
+}
