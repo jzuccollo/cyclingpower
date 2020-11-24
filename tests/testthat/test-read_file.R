@@ -1,5 +1,3 @@
-library(cyclingpower)
-
 test_that("Read FIT file", {
   test_data <- read_file(system.file("inst", "extdata", "power1.fit", package = "cyclingpower"))
 

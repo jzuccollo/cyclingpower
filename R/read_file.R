@@ -6,7 +6,11 @@
 #' @return
 extract_data <- function(file_data, file_ext) {
   if (file_ext == "fit") {
-    return(FITfileR::records(file_data))
+    return(
+      FITfileR::records(file_data) %>%
+        dplyr::bind_rows() %>%
+        dplyr::arrange(timestamp)
+    )
   } else {
     return(file_data)
   }
