@@ -21,4 +21,10 @@ Imports:
     zoo,
     magrittr,
     purrr,
-    tools
+    tools,
+    dplyr,
+    ggplot2,
+    skimr,
+    tidylog,
+    tidyquant,
+    tidyselect
