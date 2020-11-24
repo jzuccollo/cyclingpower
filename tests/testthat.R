@@ -1,4 +1,4 @@
 library(testthat)
-library(cyclingpoweR)
+library(cyclingpower)
 
-test_check("cyclingpoweR")
+test_check("cyclingpower")

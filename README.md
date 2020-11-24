@@ -4,7 +4,7 @@
 <!-- badges: start -->
 <!-- badges: end -->
 
-The goal of cyclingpoweR is to compare power files from multiple power meters in R.
+The goal of cyclingpower is to compare power files from multiple power meters in R.
 
 ## Installation
 
