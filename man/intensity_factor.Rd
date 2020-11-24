@@ -4,10 +4,10 @@
 \alias{intensity_factor}
 \title{intensity_factor}
 \usage{
-intensity_factor(ride_data, ftp)
+intensity_factor(power_data, ftp)
 }
 \arguments{
-\item{ride_data}{tbl}
+\item{power_data}{dbl}
 
 \item{ftp}{dbl FTP}
 }

@@ -4,10 +4,10 @@
 \alias{tss}
 \title{tss}
 \usage{
-tss(ride_data, ftp)
+tss(power_data, ftp)
 }
 \arguments{
-\item{ride_data}{tbl}
+\item{power_data}{dbl}
 
 \item{ftp}{dbl FTP}
 }

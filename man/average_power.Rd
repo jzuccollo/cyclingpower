@@ -4,10 +4,10 @@
 \alias{average_power}
 \title{average_power}
 \usage{
-average_power(ride_data)
+average_power(power_data)
 }
 \arguments{
-\item{ride_data}{tbl}
+\item{power_data}{dbl}
 }
 \value{
 

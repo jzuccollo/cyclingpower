@@ -4,10 +4,10 @@
 \alias{normalised_power}
 \title{normalised_power}
 \usage{
-normalised_power(ride_data)
+normalised_power(power_data)
 }
 \arguments{
-\item{ride_data}{tbl}
+\item{power_data}{dbl}
 }
 \value{
 

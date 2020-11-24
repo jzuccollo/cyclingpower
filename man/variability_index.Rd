@@ -4,10 +4,10 @@
 \alias{variability_index}
 \title{variability_index}
 \usage{
-variability_index(ride_data)
+variability_index(power_data)
 }
 \arguments{
-\item{ride_data}{tbl}
+\item{power_data}{dbl}
 }
 \value{
 
