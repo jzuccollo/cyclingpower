@@ -1,10 +1,12 @@
 ---
 title: "Compare 4iiii, Kickr, and Stages"
-output: rmarkdown::html_vignette
-vignette: >
-  %\VignetteIndexEntry{compare_pms}
-  %\VignetteEngine{knitr::rmarkdown}
-  %\VignetteEncoding{UTF-8}
+output:
+  html_document:
+    theme: spacelab
+    highlight: default
+    toc: true
+    toc_depth: 3
+    toc_float: true
 ---
 
 ```{r, include = FALSE}
@@ -77,12 +79,11 @@ run1_4iiii %>%
   knitr::kable()
 ```
 
-```{r time_series_comparison_run1}
+```{r run1_charts}
 compare_ts(run1_4iiii)
-```
-
-```{r distribution_of_difference_run1}
 compare_distribution(run1_4iiii, power_4iiii, power_kickr)
+diff_by_var(run1_4iiii, power_4iiii, power_kickr, power_kickr)
+diff_by_var(run1_4iiii, power_4iiii, power_kickr, timestamp)
 ```
 
 ### Run 3
@@ -109,12 +110,11 @@ run3_4iiii %>%
   knitr::kable()
 ```
 
-```{r time_series_comparison_run3}
+```{r run3_charts}
 compare_ts(run3_4iiii)
-```
-
-```{r distribution_of_difference_run3}
 compare_distribution(run3_4iiii, power_4iiii, power_kickr)
+diff_by_var(run3_4iiii, power_4iiii, power_kickr, power_kickr)
+diff_by_var(run3_4iiii, power_4iiii, power_kickr, timestamp)
 ```
 
 ## Stages Chorus power meter vs Kickr Core
@@ -141,10 +141,9 @@ run2_stages %>%
   knitr::kable()
 ```
 
-```{r time_series_comparison_run2}
+```{r run2_charts}
 compare_ts(run2_stages)
-```
-
-```{r distribution_of_difference_run2}
 compare_distribution(run2_stages, power_stages, power_kickr)
+diff_by_var(run2_stages, power_stages, power_kickr, power_kickr)
+diff_by_var(run2_stages, power_stages, power_kickr, timestamp)
 ```
