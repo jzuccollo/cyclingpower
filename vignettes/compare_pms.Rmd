@@ -12,7 +12,9 @@ knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>",
   echo = FALSE,
-  message = FALSE
+  message = FALSE,
+  warning = FALSE,
+  fig.width = 10
 )
 ```
 
@@ -26,81 +28,123 @@ library(glue)
 ggplot2::theme_set(ggplot2::theme_minimal())
 ```
 
+Comparing power readings across the Stages Chorus LHS power meter and 4iiii Precision LHS power meter by referencing them both to the same Wahoo Kickr Core. The Kickr was set to erg mode and ran the same programme for two separate runs, one with each power meter.
+
 ```{r read_data}
-folder <- "~/Downloads/"
-kickr_url <- "Monitor_kickr.fit"
-pm_url <- "Monitor_4iiii.gpx"
+folder <- "~/Downloads/power_meter_comparison/"
+all_files <- list.files(folder)
+data_names <- c(
+  "run1_pm4iiii",
+  "run2_pmStages",
+  "run3_pm4iiii",
+  "run1_kickr",
+  "run2_kickr",
+  "run3_kickr"
+)
+alldata <- purrr::map2(
+  .x = all_files,
+  .y = data_names,
+  .f = ~ cyclingpower::read_file(glue::glue("{folder}{.x}")) %>%
+    tidylog::select(timestamp, power)
+) %>%
+  setNames(data_names)
+```
 
-# ==== read data ====
-kickr_data <- cyclingpower::read_file(glue::glue("{folder}{kickr_url}"))
-pm_data <- cyclingpower::read_file(glue::glue("{folder}{pm_url}"))
+## 4iiii power meter vs Kickr Core
 
-pm_power_data <-
-  pm_data %>%
-  tidylog::select(time, power)
+### Run 1
 
-kickr_power_data <-
-  kickr_data %>%
-  tidylog::select(timestamp, power) %>%
-  tidylog::rename(time = timestamp)
+Before the test:
 
-alldata <-
-  tidylog::left_join(kickr_power_data, pm_power_data, by = "time") %>%
+- Left the power meter without a battery for several hours
+- Did a factory reset using the 4iiii app
+- Did a zero offset using the 4iiii app
+
+```{r descriptive_stats_run1}
+run1_4iiii <-
+  tidylog::left_join(
+    alldata$run1_kickr,
+    alldata$run1_pm4iiii,
+    by = "timestamp"
+  ) %>%
   tidylog::rename(
     power_kickr = power.x,
     power_4iiii = power.y
   )
-```
 
-```{r descriptive_stats}
-alldata %>%
-  skimr::skim() %>%
+run1_4iiii %>%
+  skim_power_data() %>%
   knitr::kable()
 ```
 
-```{r time_series_comparison}
-alldata %>%
-  tidylog::pivot_longer(
-    -time,
-    names_to = "source",
-    values_to = "power"
-  ) %>%
-  ggplot2::ggplot(ggplot2::aes(x = time, y = power, colour = source)) +
-  tidyquant::geom_ma(n = 30, linetype = "solid", size = 1) +
-  ggplot2::geom_line(alpha = 0.8) +
-  ggplot2::labs(
-    x = "Time",
-    y = "Power (watts)",
-    title = "Comparison of power data across sources",
-    subtitle = "1-second power and 30-second moving average"
-  ) +
-  ggplot2::scale_color_brewer(type = "qual")
+```{r time_series_comparison_run1}
+compare_ts(run1_4iiii)
 ```
 
-```{r distribution_of_difference}
-alldata %>%
-  tidylog::mutate(power_diff = power_4iiii - power_kickr) %>%
-  tidylog::drop_na(power_diff) %>%
-  ggplot2::ggplot(aes(x = power_diff)) +
-  ggplot2::geom_histogram() +
-  ggplot2::geom_vline(ggplot2::aes(xintercept = median(power_diff)), linetype = "dashed") +
-  ggplot2::geom_text(
-    ggplot2::aes(
-      x = median(power_diff),
-      y = 45,
-      label = glue::glue(
-        "Median difference: {median(power_diff)} watts \\
-      ({scales::comma(100 * median(power_diff) / median(power_kickr))}%)"
-      )
-    ),
-    hjust = 0,
-    nudge_x = 2
-  ) +
-  ggplot2::scale_colour_brewer(type = "qual") +
-  ggplot2::labs(
-    x = "Difference in power (4iiii - Kickr Core)",
-    y = "Frequency",
-    title = "Distribution of difference in power",
-    subtitle = "1-second differences in power, where power is recorded on both devices"
+```{r distribution_of_difference_run1}
+compare_distribution(run1_4iiii, power_4iiii, power_kickr)
+```
+
+### Run 3
+
+Before the test:
+
+- Did a spindown calibration of the Kickr Core
+- Did a zero offset using Wahoo Elemnt Bolt headunit
+
+```{r descriptive_stats_run3}
+run3_4iiii <-
+  tidylog::left_join(
+    alldata$run3_kickr,
+    alldata$run3_pm4iiii,
+    by = "timestamp"
+  ) %>%
+  tidylog::rename(
+    power_kickr = power.x,
+    power_4iiii = power.y
   )
+
+run3_4iiii %>%
+  skim_power_data() %>%
+  knitr::kable()
+```
+
+```{r time_series_comparison_run3}
+compare_ts(run3_4iiii)
+```
+
+```{r distribution_of_difference_run3}
+compare_distribution(run3_4iiii, power_4iiii, power_kickr)
+```
+
+## Stages Chorus power meter vs Kickr Core
+
+Before the test:
+
+- Left the power meter without a battery for several hours
+- Did a zero offset using the Stages app
+
+```{r descriptive_stats_run2}
+run2_stages <-
+  tidylog::left_join(
+    alldata$run2_kickr,
+    alldata$run2_pmStages,
+    by = "timestamp"
+  ) %>%
+  tidylog::rename(
+    power_kickr = power.x,
+    power_stages = power.y
+  )
+
+run2_stages %>%
+  skim_power_data() %>%
+  knitr::kable()
+```
+
+```{r time_series_comparison_run2}
+compare_ts(run2_stages)
+```
+
+```{r distribution_of_difference_run2}
+compare_distribution(run2_stages, power_stages, power_kickr)
 ```
