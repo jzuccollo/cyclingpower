@@ -4,10 +4,12 @@
 \alias{compare_ts}
 \title{compare_ts}
 \usage{
-compare_ts(rundata)
+compare_ts(rundata, runvar)
 }
 \arguments{
 \item{rundata}{tbl}
+
+\item{runvar}{chr variable denoting the different runs}
 }
 \value{
 

@@ -27,4 +27,6 @@ Imports:
     skimr,
     tidylog,
     tidyquant,
-    tidyselect
+    tidyselect,
+    rlang,
+    tidyr

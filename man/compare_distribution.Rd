@@ -4,14 +4,12 @@
 \alias{compare_distribution}
 \title{compare_distribution}
 \usage{
-compare_distribution(rundata, pm1, pm2)
+compare_distribution(rundata, runvar)
 }
 \arguments{
 \item{rundata}{tbl}
 
-\item{pm1}{var First power variable}
-
-\item{pm2}{var Second power variable}
+\item{runvar}{chr variable denoting the different runs}
 }
 \value{
 
