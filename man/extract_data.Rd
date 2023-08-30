@@ -11,9 +11,6 @@ extract_data(file_data, file_ext)
 
 \item{file_ext}{chr}
 }
-\value{
-
-}
 \description{
 extract_data
 }

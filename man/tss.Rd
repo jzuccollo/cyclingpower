@@ -11,9 +11,6 @@ tss(power_data, ftp)
 
 \item{ftp}{dbl FTP}
 }
-\value{
-
-}
 \description{
 tss
 }

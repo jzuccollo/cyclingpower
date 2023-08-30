@@ -1,0 +1,40 @@
+---
+title: "What does it take to achieve a specific NP and AP?"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{np_buster}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup}
+library(cyclingpower)
+```
+
+# Simulate a random power distribution matching specified NP and AP
+
+```{r simulate}
+n <- 1000
+target_np <- 220
+target_ap <- 180
+
+power_opt <- simulate_power(n, target_np, target_ap)
+
+# plot the results
+# Plot the histogram of power_opt with log y scale
+hist(
+  power_opt,
+  breaks = 100,
+  main = paste0("Power distribution giving NP = ", target_np, ", AP = ", target_ap),
+  sub = "Randomly chosen power distribution over 0-1000W to achieve specific AP and NP",
+  xlab = "Power (W)",
+  ylab = "Frequency (seconds)"
+)
+```

@@ -11,9 +11,6 @@ intensity_factor(power_data, ftp)
 
 \item{ftp}{dbl FTP}
 }
-\value{
-
-}
 \description{
 intensity_factor
 }

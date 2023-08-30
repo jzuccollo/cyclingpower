@@ -1,3 +1,13 @@
+#' drop_zeros
+#' 
+#' @param power_data dbl
+#' 
+#' @return
+#' @export
+drop_zeros <- function(power_data) {
+  power_data[power_data != 0]
+}
+
 #' normalised_power
 #'
 #' @param power_data dbl
@@ -5,7 +15,8 @@
 #' @return
 #' @export
 normalised_power <- function(power_data) {
-  mean(zoo::rollmean(power_data, 30)^4, na.rm = TRUE)^0.25
+  power_nozeros <- drop_zeros(power_data)
+  mean(zoo::rollmean(power_nozeros, 30)^4, na.rm = TRUE)^0.25
 }
 
 #' average_power
@@ -15,7 +26,8 @@ normalised_power <- function(power_data) {
 #' @return
 #' @export
 average_power <- function(power_data) {
-  mean(power_data, na.rm = TRUE)
+  power_nozeros <- drop_zeros(power_data)
+  mean(power_nozeros, na.rm = TRUE)
 }
 
 #' intensity_factor

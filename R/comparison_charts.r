@@ -5,7 +5,7 @@
 #'
 #' @return
 compare_ts <- function(rundata, runvar) {
-  rundata %>%
+  rundata |>
     ggplot2::ggplot(ggplot2::aes(
       x = .data$timestamp,
       y = .data$power,
@@ -37,19 +37,19 @@ compare_distribution <- function(rundata, runvar) {
   pm1 <- rlang::sym(power_sources[[1]])
   pm2 <- rlang::sym(power_sources[[2]])
 
-  reshaped_power <- rundata %>%
-    tidyr::pivot_wider(names_from = "power_source", values_from = "power") %>%
-    tidylog::drop_na() %>%
+  reshaped_power <- rundata |>
+    tidyr::pivot_wider(names_from = "power_source", values_from = "power") |>
+    tidylog::drop_na() |>
     tidylog::mutate(power_diff = {{ pm1 }} - {{ pm2 }})
 
-  median_power <- reshaped_power %>%
-    dplyr::group_by(!!rlang::sym(runvar)) %>%
+  median_power <- reshaped_power |>
+    dplyr::group_by(!!rlang::sym(runvar)) |>
     dplyr::summarise(
       median_power_diff = stats::median(.data$power_diff),
       median_power_diff_pc = 100 * .data$median_power_diff / stats::median({{ pm2 }})
     )
 
-  reshaped_power %>%
+  reshaped_power |>
     ggplot2::ggplot(ggplot2::aes(x = .data$power_diff)) +
     ggplot2::geom_histogram(binwidth = 2) +
     ggplot2::geom_vline(
@@ -89,9 +89,9 @@ compare_distribution <- function(rundata, runvar) {
 #'
 #' @return
 diff_by_var <- function(rundata, pm1, pm2, by) {
-  rundata %>%
-    tidylog::drop_na() %>%
-    tidylog::mutate(power_diff = {{ pm1 }} - {{ pm2 }}) %>%
+  rundata |>
+    tidylog::drop_na() |>
+    tidylog::mutate(power_diff = {{ pm1 }} - {{ pm2 }}) |>
     ggplot2::ggplot(ggplot2::aes(x = {{ by }}, y = power_diff)) +
     ggplot2::geom_hline(yintercept = 0, linetype = "dashed") +
     ggplot2::geom_point(alpha = 0.3) +

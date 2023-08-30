@@ -15,9 +15,6 @@ diff_by_var(rundata, pm1, pm2, by)
 
 \item{by}{var x var to plot diff against}
 }
-\value{
-
-}
 \description{
 diff_by_var
 }

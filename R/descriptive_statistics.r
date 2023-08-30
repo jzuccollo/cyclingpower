@@ -3,22 +3,19 @@
 #' @param power_data tbl
 #'
 #' @return
-skim_power_data <- function(power_data) {
-  power_only_data <-
-    power_data %>%
-    dplyr::select(tidyselect::contains("power"))
-
+skim_power_data <- function(power_data, ftp = 275) {
+  message("FTP: ", ftp)
   power_skimr <-
     skimr::skim_with(
       numeric = skimr::sfl(
-        Duration_minutes = ~ length(.) / 60,
+        duration_minutes = ~ length(.) / 60,
         avg_power = average_power,
         NP = normalised_power,
-        TSS = ~ tss(., 275),
-        IF = ~ intensity_factor(., 275),
+        TSS = ~ tss(., ftp),
+        IF = ~ intensity_factor(., ftp),
         VI = variability_index
       ),
       append = FALSE
     )
-  power_skimr(power_only_data)
+  power_skimr(power_data)
 }

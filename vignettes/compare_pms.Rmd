@@ -1,5 +1,5 @@
 ---
-title: "Compare 4iiii, Kickr, and Stages"
+title: "Compare power meter readings"
 output:
   html_document:
     theme: spacelab
@@ -30,85 +30,49 @@ library(glue)
 ggplot2::theme_set(ggplot2::theme_minimal())
 ```
 
-Comparing power readings across the Stages Chorus LHS power meter and 4iiii Precision LHS power meter by referencing them both to the same Wahoo Kickr Core. The Kickr was set to erg mode and ran the same programme for two separate runs, one with each power meter.
+Comparing power readings across power meters.
 
 ```{r read_data}
-folder <- "~/Downloads/power_meter_comparison/"
+folder <- "FIT_FILES_HERE"
 all_files <- list.files(folder)
 data_names <- c(
-  "run1_pm4iiii",
-  "run2_pmStages",
-  "run3_pm4iiii",
-  "run4_pm4iiii",
-  "run1_kickr",
-  "run2_kickr",
-  "run3_kickr",
-  "run4_kickr"
+  "run1",
+  "run2",
+  "run3",
+  "run4"
 )
 alldata <- purrr::map2(
   .x = all_files,
   .y = data_names,
-  .f = ~ cyclingpower::read_file(glue::glue("{folder}{.x}")) %>%
-    tidylog::select(timestamp, power) %>%
-    tidylog::mutate(runtype = .y) %>%
+  .f = ~ cyclingpower::read_file(glue::glue("{folder}{.x}")) |>
+    tidylog::select(timestamp, power) |>
+    tidylog::mutate(runtype = .y) |>
     tidyr::separate(runtype, sep = "_", into = c("run", "power_source"))
-) %>%
+) |>
   dplyr::bind_rows()
 ```
 
-## 4iiii power meter vs Kickr Core
+## PM1 vs PM2
 
 Before the tests:
 
-- Run 1
-  - Left the power meter without a battery for several hours
-  - Did a factory reset using the 4iiii app
-  - Did a zero offset using the 4iiii app
-- Run 3
-  - Did a spindown calibration of the Kickr Core
-  - Did a zero offset using Wahoo Elemnt Bolt headunit
-- Run 4
-  - Did a zero offset using Wahoo Elemnt Bolt headunit
+  - Do a factory reset
+  - Do a zero offset
 
 ```{r descriptive_stats_4iiii}
-data_4iiii <-
-  alldata %>%
-  tidylog::filter(run %in% c("run1", "run3", "run4"))
+data_pm1 <-
+  alldata |>
+  tidylog::filter(run %in% c("run1", "run3"))
 
-data_4iiii %>%
-  tidylog::group_by(run, power_source) %>%
-  skim_power_data() %>%
+data_pm1 |>
+  tidylog::group_by(run, power_source) |>
+  skim_power_data() |>
   knitr::kable()
 ```
 
-```{r charts_4iiii}
-compare_ts(data_4iiii, "run")
-compare_distribution(data_4iiii, "run")
-# diff_by_var(run1_4iiii, power_4iiii, power_kickr, power_kickr)
-# diff_by_var(run1_4iiii, power_4iiii, power_kickr, timestamp)
-```
+Compare the two runs with PM1.
 
-## Stages Chorus power meter vs Kickr Core
-
-Before the test:
-
-- Left the power meter without a battery for several hours
-- Did a zero offset using the Stages app
-
-```{r descriptive_stats_stages}
-data_stages <-
-  alldata %>%
-  tidylog::filter(run %in% c("run2"))
-
-data_stages %>%
-  tidylog::group_by(run, power_source) %>%
-  skim_power_data() %>%
-  knitr::kable()
-```
-
-```{r charts_stages}
-compare_ts(data_stages, "run")
-compare_distribution(data_stages, "run")
-# diff_by_var(run2_stages, power_stages, power_kickr, power_kickr)
-# diff_by_var(run2_stages, power_stages, power_kickr, timestamp)
+```{r charts_pm1}
+compare_ts(data_pm1, "run")
+compare_distribution(data_pm1, "run")
 ```

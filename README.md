@@ -6,6 +6,8 @@
 
 The goal of cyclingpower is to compare power files from multiple power meters in R.
 
+Currently just a personal project to solve a very specific problem I had. Not designed to be useful to anyone else!
+
 ## Installation
 
 You can install cyclingpower with:

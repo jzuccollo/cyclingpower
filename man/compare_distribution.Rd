@@ -11,9 +11,6 @@ compare_distribution(rundata, runvar)
 
 \item{runvar}{chr variable denoting the different runs}
 }
-\value{
-
-}
 \description{
 compare_distribution
 }

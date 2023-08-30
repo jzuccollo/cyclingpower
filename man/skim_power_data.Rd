@@ -4,13 +4,10 @@
 \alias{skim_power_data}
 \title{skim_power_data}
 \usage{
-skim_power_data(power_data)
+skim_power_data(power_data, ftp = 275)
 }
 \arguments{
 \item{power_data}{tbl}
-}
-\value{
-
 }
 \description{
 skim_power_data

@@ -9,9 +9,6 @@ average_power(power_data)
 \arguments{
 \item{power_data}{dbl}
 }
-\value{
-
-}
 \description{
 average_power
 }

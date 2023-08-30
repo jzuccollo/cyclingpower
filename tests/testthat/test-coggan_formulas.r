@@ -1,5 +1,5 @@
 test_that("Coggan calculations", {
-  test_data <- read_file(system.file("inst", "extdata", "power1.fit", package = "cyclingpower"))
+  test_data <- read_file("power1.fit")
   ftp <- 275
 
   expect_lt(abs(average_power(test_data$power) - 189), 1)

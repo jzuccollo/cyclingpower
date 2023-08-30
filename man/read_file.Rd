@@ -9,9 +9,6 @@ read_file(file_url)
 \arguments{
 \item{file_url}{chr}
 }
-\value{
-
-}
 \description{
 read_file
 }
