@@ -2,13 +2,20 @@
 % Please edit documentation in R/coggan_formulas.r
 \name{variability_index}
 \alias{variability_index}
-\title{variability_index}
+\title{Variability index}
 \usage{
 variability_index(power_data)
 }
 \arguments{
-\item{power_data}{dbl}
+\item{power_data}{Numeric vector of per-second power in watts.}
+}
+\value{
+Variability index, where 1 is a perfectly steady effort.
 }
 \description{
-variability_index
+Normalised power over average power: how ragged the effort was. A steady
+time trial sits near 1, a criterium or a hilly group ride well above it.
+}
+\examples{
+variability_index(rep(250, 600))
 }

@@ -1,0 +1,167 @@
+---
+title: "Power meter comparison"
+output:
+  html_document:
+    theme: spacelab
+    toc: true
+    toc_float: true
+params:
+  results: NULL
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  echo = FALSE,
+  message = FALSE,
+  warning = FALSE,
+  fig.width = 10,
+  fig.height = 6
+)
+library(cyclingpower)
+
+results <- params$results
+aligned <- results$aligned
+settings <- results$settings
+```
+
+This compares `r dplyr::n_distinct(aligned$source)` power sources across
+`r dplyr::n_distinct(aligned$run)` run(s).
+
+Computed with a minimum power of `r settings$min_power` W, `r settings$width` W
+bands showing only those with at least `r settings$min_seconds` seconds, clock
+offsets sought up to `r settings$max_offset` s, and 95% intervals
+from a moving-block bootstrap of `r settings$replicates` replicates over
+`r settings$block`-second blocks
+`r if (is.null(settings$seed)) "(unseeded, so the intervals move a little on a re-run)" else paste0("under seed ", settings$seed)`.
+
+```{r files}
+if (!is.null(results$spec)) {
+  knitr::kable(results$spec, caption = "The files these results came from")
+}
+```
+
+## Alignment
+
+Two meters recording the same ride do not necessarily agree about what time it
+is. Differencing on nominal timestamps when the clocks disagree compares power
+from one moment against power from another, which inflates the spread and
+shifts the average difference without any sign that anything went wrong. Each
+source below was matched against a reference by cross-correlating the power
+traces.
+
+```{r alignment}
+knitr::kable(results$alignment, digits = 3)
+```
+
+```{r alignment-note, results = "asis"}
+unresolved <- results$alignment$source[results$alignment$status == "unresolved"]
+
+if (length(unresolved) > 0) {
+  cat(
+    "> **Alignment incomplete.** No clock offset could be established for ",
+    paste(unresolved, collapse = ", "),
+    ", so the recorded timestamps stand. This is expected for a steady effort ",
+    "with no features to lock onto; a low correlation instead suggests these ",
+    "are not recordings of the same ride.\n",
+    sep = ""
+  )
+}
+```
+
+```{r timeseries}
+plot_timeseries(aligned, smooth = settings$smooth)
+```
+
+## Overall agreement
+
+`bias_w` is the average difference in watts and `gain_pc` the same thing as a
+percentage, which is usually the more natural way to read a meter's error.
+`loa_lower` and `loa_upper` bound the range within which most individual
+seconds fall. Intervals come from a moving-block bootstrap rather than from
+treating each second as independent evidence, which would make a fraction of a
+watt look decisively different from zero.
+
+```{r agreement}
+knitr::kable(results$agreement, digits = 2)
+```
+
+```{r bland-altman}
+plot_agreement(aligned, min_power = settings$min_power)
+```
+
+## Agreement across the power range
+
+Meters often agree at endurance pace and diverge at threshold or in sprints,
+which the single average above hides entirely.
+
+The same bands are shown twice. In watts, a meter that is a constant
+percentage out reads further from its partner the harder you ride, so the line
+rises even though nothing about the meter changes; in per cent that same meter
+is flat. A line that is level in watts and tilts in per cent, or tilts in both,
+is a meter whose error genuinely depends on how hard you were riding.
+
+```{r by-level-watts}
+plot_by_level(results$by_level)
+```
+
+```{r by-level-percent}
+plot_by_level(results$by_level, scale = "percent")
+```
+
+```{r by-level-alert, results = "asis"}
+uneven <- level_dependence(results$by_level)
+uneven <- uneven[uneven$separated, ]
+
+for (i in seq_len(nrow(uneven))) {
+  r <- uneven[i, ]
+  cat(sprintf(
+    paste(
+      "> **%s and %s do not differ by a constant amount.** The gain runs from",
+      "%+.1f%% at %s to %+.1f%% at %s in %s, and those two intervals do not",
+      "overlap, so the overall average is not a good summary of this pair.\n\n"
+    ),
+    r$source_a, r$source_b, r$low_gain, r$low_band,
+    r$high_gain, r$high_band, r$run
+  ))
+}
+```
+
+```{r by-level-table}
+results$by_level |>
+  dplyr::transmute(
+    Run = run,
+    Pair = paste(source_a, "-", source_b),
+    Band = band_range,
+    Seconds = seconds,
+    `Difference (W)` = sprintf("%+.1f (%.1f to %.1f)", bias_w, bias_lo, bias_hi),
+    `Gain %` = sprintf("%+.2f (%.2f to %.2f)", gain_pc, gain_lo, gain_hi)
+  ) |>
+  knitr::kable(align = "lllrrr")
+```
+
+## Linking meters across runs
+
+```{r chain, results = "asis"}
+if (is.null(results$chained)) {
+  cat(results$chain_error, "\n")
+} else {
+  cat("Bridge meter: **", results$chain$bridge, "**\n\n", sep = "")
+  cat(results$chain$assumption, "\n\n")
+  cat(
+    "The two runs overlap over ",
+    round(100 * results$chain$overlap),
+    "% of the power range they cover between them. Gains compared over ",
+    "different parts of the range are not really comparable.\n\n",
+    sep = ""
+  )
+  print(knitr::kable(results$chained, digits = 2))
+  cat("\n\n")
+  print(knitr::kable(results$chain$coverage, digits = 1))
+}
+```
+
+```{r chain-plot}
+if (!is.null(results$chained)) {
+  plot_chain(results$chained)
+}
+```

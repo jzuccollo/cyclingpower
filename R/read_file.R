@@ -1,35 +1,43 @@
-#' extract_data
+#' Read a ride file
 #'
-#' @param file_data tbl
-#' @param file_ext chr
+#' Reads a `.fit`, `.gpx` or `.csv` file into the canonical ride schema, so
+#' nothing downstream has to care which format a ride arrived in.
 #'
-#' @return
-extract_data <- function(file_data, file_ext) {
-  if (file_ext == "fit") {
-    return(
-      FITfileR::records(file_data) |>
-        dplyr::bind_rows() |>
-        dplyr::arrange(timestamp)
-    )
-  } else {
-    return(file_data)
-  }
-}
-
-#' read_file
+#' @param file_url Path or URL of a `.fit`, `.gpx` or `.csv` file. A CSV needs a
+#'   `time` column, in ISO 8601 or epoch seconds, and a `power` column.
 #'
-#' @param file_url chr
+#' @return A tibble with `time` (POSIXct, UTC) and `power` (watts), plus
+#'   whichever of `cadence`, `heart_rate`, `speed`, `distance`, `altitude`,
+#'   `temperature`, `lat` and `lon` the file carries, ordered by time.
 #'
-#' @return
+#' @examples
+#' read_file(system.file("extdata", "power1.fit", package = "cyclingpower"))
 #' @export
 read_file <- function(file_url) {
   file_ext <- tolower(tools::file_ext(file_url))
-  if (file_ext == "fit") {
-    read_fun <- FITfileR::readFitFile
-  } else if (file_ext == "gpx") {
-    read_fun <- trackeR::readGPX
-  } else {
-    stop(glue::glue("{file_url} is not a FIT or GPX file."))
+
+  switch(
+    file_ext,
+    fit = read_fit(file_url),
+    gpx = read_gpx(file_url),
+    csv = read_csv_ride(file_url),
+    stop(sprintf("%s is not a FIT, GPX or CSV file.", basename(file_url)))
+  )
+}
+
+#' FIT files store records against one or more message definitions, so a ride
+#' can arrive as several tibbles with different columns.
+#' @noRd
+read_fit <- function(file_url) {
+  if (!requireNamespace("FITfileR", quietly = TRUE)) {
+    stop(
+      "Reading FIT files needs FITfileR, which is not on CRAN. Install it ",
+      'with remotes::install_github("grimbough/FITfileR").'
+    )
   }
-  extract_data(read_fun(file_url), file_ext)
+
+  FITfileR::readFitFile(file_url) |>
+    FITfileR::records() |>
+    dplyr::bind_rows() |>
+    canonicalise(file_url)
 }

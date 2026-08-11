@@ -2,13 +2,23 @@
 % Please edit documentation in R/read_file.R
 \name{read_file}
 \alias{read_file}
-\title{read_file}
+\title{Read a ride file}
 \usage{
 read_file(file_url)
 }
 \arguments{
-\item{file_url}{chr}
+\item{file_url}{Path or URL of a `.fit`, `.gpx` or `.csv` file. A CSV needs a
+`time` column, in ISO 8601 or epoch seconds, and a `power` column.}
+}
+\value{
+A tibble with `time` (POSIXct, UTC) and `power` (watts), plus
+  whichever of `cadence`, `heart_rate`, `speed`, `distance`, `altitude`,
+  `temperature`, `lat` and `lon` the file carries, ordered by time.
 }
 \description{
-read_file
+Reads a `.fit`, `.gpx` or `.csv` file into the canonical ride schema, so
+nothing downstream has to care which format a ride arrived in.
+}
+\examples{
+read_file(system.file("extdata", "power1.fit", package = "cyclingpower"))
 }

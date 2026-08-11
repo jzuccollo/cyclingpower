@@ -2,13 +2,26 @@
 % Please edit documentation in R/descriptive_statistics.r
 \name{skim_power_data}
 \alias{skim_power_data}
-\title{skim_power_data}
+\title{Summarise a ride with the Coggan metrics}
 \usage{
 skim_power_data(power_data, ftp = 275)
 }
 \arguments{
-\item{power_data}{tbl}
+\item{power_data}{Tibble with a `power` column, optionally grouped.}
+
+\item{ftp}{Functional threshold power in watts.}
+}
+\value{
+A `skimr` summary with duration, average power, NP, TSS, IF and VI.
 }
 \description{
-skim_power_data
+Replaces `skimr`'s default numeric summary with the power metrics, so a
+grouped tibble yields one row of metrics per group. Useful for a per-source
+overview alongside the paired comparison, though note the zero-handling
+caveat in [drop_zeros()].
+}
+\examples{
+\dontrun{
+read_file("ride.fit") |> dplyr::select(power) |> skim_power_data(ftp = 275)
+}
 }

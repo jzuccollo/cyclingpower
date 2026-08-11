@@ -2,13 +2,22 @@
 % Please edit documentation in R/coggan_formulas.r
 \name{average_power}
 \alias{average_power}
-\title{average_power}
+\title{Average power}
 \usage{
 average_power(power_data)
 }
 \arguments{
-\item{power_data}{dbl}
+\item{power_data}{Numeric vector of per-second power in watts.}
+}
+\value{
+Average power in watts.
 }
 \description{
-average_power
+The mean over the whole recording, counting coasting as zero, which is what
+variability index and training stress score are defined against. For the
+average of the seconds actually spent pedalling, compose with
+[drop_zeros()].
+}
+\examples{
+average_power(c(rep(200, 1800), rep(0, 1800)))
 }

@@ -1,73 +1,112 @@
-obj_fun_part2 <- function(x, target_np, target_ap) {
-  np <- normalised_power(x)
-  ap <- average_power(x)
-  (np - target_np)^2 + (ap - target_ap)^2
-}
+#' Simulate a power series with a given average and normalised power
+#'
+#' Inverts the metrics: rather than summarising a ride you rode, it builds a
+#' second-by-second series that would produce the numbers you name.
+#'
+#' The problem is wildly underdetermined — thousands of seconds, two
+#' constraints — so the shape has to come from somewhere. Here it comes from an
+#' autocorrelated process, which is what riding actually looks like: you hold a
+#' power for minutes at a time rather than jumping about at random. That matters
+#' because normalised power is defined on a thirty-second rolling mean, and
+#' second-by-second noise averages away inside that window. A series of
+#' independent draws has a variability index of essentially 1 no matter how wide
+#' its spread, so noise alone cannot produce a normalised power above the
+#' average.
+#'
+#' Scale and shape are then solved separately, which is what makes this exact
+#' and quick. Both metrics scale linearly with power, so their ratio does not
+#' depend on the overall level: raising the series to a power sets the
+#' variability index, and multiplying through afterwards sets the average
+#' without disturbing it. That leaves one monotone equation in one unknown
+#' rather than a search over every second of the ride.
+#'
+#' @param n_seconds Number of seconds to simulate.
+#' @param target_ap Average power to hit, in watts.
+#' @param target_np Normalised power to hit, in watts. Cannot be below
+#'   `target_ap`.
+#' @param smoothness Autocorrelation of the underlying effort, between 0 and 1.
+#'   Higher values give long sustained efforts, lower values a more punchy ride.
+#'   At a given normalised power this changes the character of the session, not
+#'   its statistics.
+#'
+#' @return Numeric vector of per-second power values, hitting both targets
+#'   exactly. Values are not rounded to whole watts, which would perturb them.
+#'
+#' @section Feasibility:
+#' Nothing here knows about critical power, so nothing stops you naming targets
+#' no rider could hold. A normalised power above threshold sustained for an hour
+#' comes back as a series that would exhaust any W' several times over, and that
+#' is the target being impossible rather than the simulation being wrong: a
+#' *steady* hour at that power would fail the same test. Check the intensity you
+#' are asking for before reading anything into the shape that comes back.
+#'
+#' Within a feasible intensity the shape holds up, but its upper tail is
+#' lognormal and widens with the variability index, so a ragged ride posts
+#' sustained peaks — the best thirty seconds, not the peak second — beyond what
+#' the same ride's five-minute best implies. Treat a high variability index as
+#' the place where the series stops being a plausible ride and starts being
+#' merely a series with the right two numbers.
+#'
+#' @examples
+#' ride <- withr::with_seed(1, simulate_power(3600, target_ap = 180, target_np = 220))
+#' c(average_power(ride), normalised_power(ride))
+#' @export
+simulate_power <- function(
+  n_seconds,
+  target_ap,
+  target_np,
+  smoothness = 0.98
+) {
+  target_vi <- target_np / target_ap
 
-obj_fun_part1 <- function(x, target_ap) {
-  ap <- average_power(x)
-  (ap - target_ap)^2
-}
-
-#' simulator
-#' 
-#' @param power_init dbl Initial power values
-#' @param lossfunc dbl Loss function
-#' @param n_seconds int Number of seconds to simulate
-#' @param max_power dbl Maximum power
-#' @param ... Other arguments to pass to optim, e.g. target_np, target_ap
-#' 
-#' @return optim output
-simulator <- function(power_init, lossfunc, n_seconds, max_power, ...) {
-  sim_result <- optim(
-    par = power_init,
-    fn = lossfunc,
-    method = "L-BFGS-B",
-    lower = rep(1, n_seconds),
-    upper = rep(max_power, n_seconds),
-    ...
-  )
-  
-  # check that the optimizer converged
-  if (sim_result$convergence != 0) {
-    stop("Optimizer did not converge. Is the target NP achievable with the specified max power and NP?")
+  if (target_vi < 1) {
+    stop(
+      "Normalised power cannot be below average power: no series has a ",
+      "variability index under 1."
+    )
   }
 
-  return(sim_result)
+  shape <- effort_shape(n_seconds, smoothness)
+  shaped <- shape^solve_spikiness(shape, target_vi, smoothness)
+
+  shaped * target_ap / average_power(shaped)
 }
 
-#' simulate_power
-#'
-#' @description Simulate power data for a given NP and AP
-#'
-#' @param n_seconds int Number of seconds to simulate
-#' @param target_np dbl Normalised power
-#' @param target_ap dbl Average power
-#'
-#' @return Vector of power values
-#' @export
-simulate_power <- function(n_seconds, target_ap, target_np, max_power = 1000) {
-  # Create some initial values using a beta distribution
-  power_init <- rbeta(n_seconds, 3, 15) * max_power
+#' A positive, autocorrelated series standing in for the shape of an effort.
+#' Standardising before exponentiating fixes the spread, so `smoothness`
+#' controls only how sustained the changes are and the exponent alone sets the
+#' variability index.
+#' @noRd
+effort_shape <- function(n_seconds, smoothness) {
+  z <- as.numeric(stats::arima.sim(list(ar = smoothness), n = n_seconds))
+  exp(as.numeric(scale(z)))
+}
 
-  # Run the initial value optimizer for AP
-  run1_power <- simulator(
-    power_init = power_init,
-    lossfunc = obj_fun_part1,
-    n_seconds = n_seconds,
-    max_power = max_power,
-    target_ap = target_ap
-  )
-  # Run the initial value optimizer for AP
-  run2_power <- simulator(
-    power_init = run1_power$par,
-    lossfunc = obj_fun_part2,
-    n_seconds = n_seconds,
-    max_power = max_power,
-    target_ap = target_ap,
-    target_np = target_np
-  )
+#' Raising a positive series to a higher power stretches its peaks relative to
+#' its troughs, so the variability index climbs monotonically from exactly 1 at
+#' an exponent of zero. That gives a guaranteed bracket for the root find.
+#' @noRd
+solve_spikiness <- function(shape, target_vi, smoothness) {
+  if (target_vi <= 1 + 1e-9) {
+    return(0)
+  }
 
-  # Extract the optimized power values
-  run2_power$par
+  gap <- function(b) variability_index(shape^b) - target_vi
+
+  upper <- 1
+  while (gap(upper) < 0) {
+    upper <- upper * 2
+    if (upper > 64) {
+      stop(
+        "Could not reach a variability index of ",
+        signif(target_vi, 4),
+        " with smoothness = ",
+        smoothness,
+        ". Raise smoothness so the effort holds longer, since noise inside ",
+        "the 30-second window cannot lift normalised power."
+      )
+    }
+  }
+
+  stats::uniroot(gap, c(0, upper), tol = 1e-10)$root
 }
