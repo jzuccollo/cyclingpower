@@ -91,23 +91,19 @@ power_agreement <- function(
     dplyr::ungroup()
 }
 
+#' Both intervals come off one set of resampled indices, so the watts and the
+#' per cent on a row describe the same resampled seconds rather than two
+#' independent attempts at the same pair.
 #' @noRd
 agreement_summary <- function(pair, block, replicates) {
   n <- nrow(pair)
   bias <- mean(pair$difference)
   spread <- stats::sd(pair$difference)
 
-  bias_ci <- block_bootstrap_ci(
-    n,
-    function(idx) mean(pair$difference[idx]),
-    block,
-    replicates
-  )
-  gain_ci <- block_bootstrap_ci(
-    n,
-    function(idx) 100 * (exp(mean(pair$log_ratio[idx])) - 1),
-    block,
-    replicates
+  draws <- draws_over(n, block, replicates)
+  bias_ci <- percentile_ci(draws(function(i) mean(pair$difference[i])))
+  gain_ci <- percentile_ci(
+    draws(function(i) 100 * (exp(mean(pair$log_ratio[i])) - 1))
   )
 
   tibble::tibble(
@@ -195,10 +191,7 @@ agreement_by_level <- function(
 #' @noRd
 level_summary <- function(band, block, replicates) {
   n <- nrow(band)
-  idx <- block_indices(n, block, replicates)
-  draws <- function(f) {
-    if (is.null(idx)) rep(NA_real_, replicates) else vapply(idx, f, numeric(1))
-  }
+  draws <- draws_over(n, block, replicates)
 
   bias_ci <- percentile_ci(draws(function(i) mean(band$difference[i])))
   gain_ci <- percentile_ci(

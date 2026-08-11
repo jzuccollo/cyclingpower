@@ -1,4 +1,4 @@
-#' Confidence interval for a statistic over an autocorrelated series
+#' Resampled draws of a statistic over an autocorrelated series
 #'
 #' Per-second power is heavily autocorrelated: what you are riding this second
 #' is nearly what you were riding last second. Treating an hour's recording as
@@ -15,20 +15,15 @@
 #' @param block Block length in seconds.
 #' @param replicates Number of bootstrap replicates.
 #'
-#' @return Numeric vector of the lower and upper bounds.
+#' @return Numeric vector of `replicates` draws of the statistic.
 #' @noRd
 block_bootstrap_draws <- function(n, statistic, block = 60, replicates = 1000) {
-  idx <- block_indices(n, block, replicates)
-  if (is.null(idx)) {
-    return(rep(NA_real_, replicates))
-  }
-  vapply(idx, statistic, numeric(1))
+  draws_over(n, block, replicates)(statistic)
 }
 
 #' The resampled row indices, separated from evaluating a statistic on them so
-#' that two statistics over the same band can share one set of draws. Generating
-#' the indices dominates the cost, and two statistics resampled independently
-#' would also give intervals that disagree about which seconds they saw.
+#' that several statistics over the same seconds can share one set; see
+#' `draws_over()`.
 #'
 #' Returns `NULL` when there are too few observations to resample at all.
 #'
@@ -56,10 +51,24 @@ block_indices <- function(n, block = 60, replicates = 1000) {
   })
 }
 
-#' @rdname block_bootstrap_draws
+#' One set of resampled indices, returned as a function that evaluates any
+#' statistic over them. Generating the indices dominates the cost, so a second
+#' statistic is close to free, and two statistics resampled independently would
+#' give intervals that disagree about which seconds they saw.
+#'
+#' @inheritParams block_bootstrap_draws
+#' @return A function of a statistic returning `replicates` draws.
 #' @noRd
-block_bootstrap_ci <- function(n, statistic, block = 60, replicates = 1000) {
-  percentile_ci(block_bootstrap_draws(n, statistic, block, replicates))
+draws_over <- function(n, block = 60, replicates = 1000) {
+  idx <- block_indices(n, block, replicates)
+
+  function(statistic) {
+    if (is.null(idx)) {
+      rep(NA_real_, replicates)
+    } else {
+      vapply(idx, statistic, numeric(1))
+    }
+  }
 }
 
 #' Intervals are 95% throughout. Nothing here is a formal test, so a settable

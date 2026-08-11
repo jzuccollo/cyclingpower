@@ -30,8 +30,16 @@ test_that("a known gain is recovered", {
 })
 
 test_that("a noisy gain gives an interval that brackets the truth", {
-  aligned <- align_rides(two_source_rides(gain = 1.03, noise = 12))
-  out <- withr::with_seed(1, power_agreement(aligned))
+  # Noise on both meters and the softest seconds dropped, because neither
+  # choice is cosmetic here. A log ratio is convex, so noise on one meter alone
+  # shifts the estimate by more than the interval is wide, and at 20 W a 12 W
+  # error moves it further still. Either way the recovered gain would sit a
+  # fixed distance from the planted one and bracketing would be luck.
+  aligned <- align_rides(as_rides(list(
+    A = make_source(fixture_ride(), noise = 12, seed = 1),
+    B = make_source(fixture_ride(), gain = 1.03, noise = 12, seed = 2)
+  )))
+  out <- withr::with_seed(1, power_agreement(aligned, min_power = 100))
 
   truth <- 100 * (1 / 1.03 - 1)
   expect_equal(out$gain_pc, truth, tolerance = 0.5)
