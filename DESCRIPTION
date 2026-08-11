@@ -1,31 +1,40 @@
 Package: cyclingpower
 Type: Package
-Title: Analyse cycling power data in R
-Version: 0.1.0
+Title: Compare readings from multiple cycling power meters
+Version: 0.2.0
 Author: jz
 Maintainer: jz <jameszuccollo@gmail.com>
-Description: Simple functions to compare data from multiple power meters.
+Description: Read FIT and GPX ride files recorded by two or more power
+    meters, align them onto a common clock, and quantify how their readings
+    differ overall and across the power range. Supports linking a third
+    meter to the first two through a bridge meter common to both rides.
 License: GPL-3
 Encoding: UTF-8
 LazyData: true
-RoxygenNote: 7.2.3
-Suggests: 
+Remotes:
+    grimbough/FITfileR
+Suggests:
+    bslib,
+    DT,
+    FITfileR,
     knitr,
-    rmarkdown,
+    shiny,
+    shinyFiles,
     testthat
 VignetteBuilder: knitr
-Imports: 
-    trackeR,
-    FITfileR,
-    glue,
-    zoo,
-    purrr,
-    tools,
+Imports:
     dplyr,
     ggplot2,
-    skimr,
-    tidylog,
-    tidyquant,
-    tidyselect,
+    purrr,
     rlang,
-    tidyr
+    rmarkdown,
+    skimr,
+    stats,
+    tibble,
+    tidyr,
+    tools,
+    utils,
+    withr,
+    xml2,
+    zoo
+Config/roxygen2/version: 8.0.0
