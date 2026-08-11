@@ -828,6 +828,10 @@ server <- function(input, output, session) {
 
   # ---- Settings ----------------------------------------------------------
 
+  # Clearing the box leaves the input NA, which with_seed rejects, so every
+  # panel in the app would go down until something was typed back in.
+  current_seed <- reactive(if (is.na(input$seed)) 1L else input$seed)
+
   # Bundled and debounced together, so a drag settles into one recompute rather
   # than a cascade, and events queued during a slow bootstrap collapse into one.
   # max_offset belongs in here now that it sits in the sidebar where anyone can
@@ -838,7 +842,7 @@ server <- function(input, output, session) {
       min_power = input$min_power,
       block = as.numeric(input$block),
       replicates = as.numeric(input$replicates),
-      seed = input$seed,
+      seed = current_seed(),
       max_offset = input$max_offset,
       smooth = input$smooth
     )),
@@ -1520,11 +1524,11 @@ server <- function(input, output, session) {
 
   observeEvent(input$reseed, {
     previous(list(
-      seed = input$seed,
+      seed = current_seed(),
       rows = isolate(pair_rows()),
       key = isolate(comparable())
     ))
-    updateNumericInput(session, "seed", value = input$seed + 1L)
+    updateNumericInput(session, "seed", value = current_seed() + 1L)
   })
 
   # Checked at display time against a stored fingerprint, not cleared by an
