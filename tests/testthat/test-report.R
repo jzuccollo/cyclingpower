@@ -42,6 +42,29 @@ test_that("every setting reaches the results it governs", {
   )
 })
 
+test_that("rendering writes nothing into the installed package", {
+  # knitr writes comparison.knit.md and the figures beside whichever copy of the
+  # template it is handed. Handed the installed one, that is a write into the
+  # package's own directory, which anyone whose library is read-only cannot do.
+  skip_if_not(rmarkdown::pandoc_available())
+
+  ride <- fixture_ride()[1:600, ]
+  aligned <- align_rides(as_rides(list(
+    A = ride,
+    B = make_source(ride, gain = 1.03, noise = 4)
+  )))
+  results <- withr::with_seed(1, compare_all(aligned, replicates = 50))
+
+  installed <- system.file("rmarkdown", package = "cyclingpower")
+  before <- list.files(installed, recursive = TRUE)
+
+  out <- file.path(withr::local_tempdir(), "report.html")
+  render_comparison(results, out)
+
+  expect_true(file.exists(out))
+  expect_equal(list.files(installed, recursive = TRUE), before)
+})
+
 test_that("min_seconds defaults the same way through compare_all", {
   aligned <- align_rides(as_rides(list(
     A = fixture_ride(),

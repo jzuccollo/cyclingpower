@@ -143,11 +143,18 @@ compare_report <- function(
 #' @return The path of the rendered file, invisibly.
 #' @export
 render_comparison <- function(results, output_file) {
-  template <- system.file(
+  installed <- system.file(
     "rmarkdown",
     "comparison.Rmd",
     package = "cyclingpower"
   )
+
+  # Rendered from a copy, because knitr writes comparison.knit.md and the figure
+  # files beside the template it is given. Pointed at the installed one, that is
+  # a write into the package's own directory, which fails outright for anyone
+  # whose library is read-only.
+  template <- file.path(withr::local_tempdir(), basename(installed))
+  file.copy(installed, template)
 
   rendered <- rmarkdown::render(
     template,
