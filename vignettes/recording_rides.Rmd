@@ -1,0 +1,261 @@
+---
+title: "Recording rides for comparison"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Recording rides for comparison}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  eval = FALSE
+)
+```
+
+Everything in `vignette("compare_pms")` assumes you already have two or three
+files recorded from the same riding. Getting those files is the part that
+actually goes wrong, and most of the ways it goes wrong cannot be repaired
+afterwards: a dropped sample is gone, a mid-ride auto-pause cannot be undone,
+and a perfectly steady hour contains no evidence about how far apart the head
+unit clocks were.
+
+This vignette is the recording protocol. It is short, and following it costs
+one extra minute at the start of a ride.
+
+## One meter, many listeners
+
+The constraint that shapes the whole setup is that a power meter broadcasts,
+but a recorder records one power source. There is no consumer head unit that
+writes two power channels into an ordinary file.
+
+Over ANT+ that is not a problem. ANT+ is a one-to-many broadcast with no
+handshake, so a single meter can be picked up by any number of head units at
+once, and two head units listening to the same meter do not interfere with each
+other. Bluetooth is a connection rather than a broadcast, and classically a
+meter accepted one at a time; recent firmware on many meters allows two, but
+you cannot rely on it.
+
+The practical rule follows: **pair each meter to its own recorder over ANT+
+wherever the meter offers it**, and keep Bluetooth for the one device that has
+no ANT+ radio — usually a phone or a computer running Zwift. Do not pair the
+same meter to two apps over Bluetooth and hope; the second connection will
+either be refused or will drop out intermittently, and intermittent drop-outs
+are much harder to spot in the file than a flat refusal.
+
+So two meters need two recorders, and three meters need three. Common
+combinations:
+
+| Meters | Recorders |
+|---|---|
+| Trainer + pedals | Zwift (trainer, over Bluetooth) and a head unit (pedals, over ANT+) |
+| Two bike-mounted meters | Two head units, both over ANT+ |
+| Three meters | Two head units plus a phone app, or two runs and a bridge meter — see below |
+
+Two head units of the same model are marginally better than two different ones,
+because they will resolve and log the broadcast the same way. It is not
+important enough to buy one for.
+
+## Settings on each recorder
+
+Three settings matter, and the first two matter a great deal.
+
+**Record every second, not "smart" recording.** Garmin's smart recording writes
+a sample only when the numbers change enough, which produces a file with
+irregular gaps. `align_rides()` resamples onto a one-second grid and leaves
+unrecorded seconds empty, so smart recording thins the series that the
+cross-correlation and the per-second differencing both work on. This is the
+single most damaging setting on the head unit, and it is on by default on some
+units.
+
+**Turn auto-pause off on every recorder.** `align_rides()` estimates one clock
+offset per source per run. An auto-pause that triggers on one unit and not the
+other — at a junction, or when the trainer drops below the speed threshold —
+shifts everything after it by the length of the pause, so the true offset
+becomes two different numbers and no single correction fixes both. A stopped
+period recorded as zeros is fine; the coasting seconds are dropped from the
+agreement anyway.
+
+**Let the clocks set themselves.** Head units take their clock from GPS, and
+two units that both have a fix will usually be within a second or two of each
+other. A unit ridden indoors without a fix can be minutes out, and
+`align_rides()` only searches ±30 seconds by default. If you ride indoors, take
+each unit outside for a minute before you start, or raise `max_offset`.
+
+Beyond that: start and stop both recorders as close together as you can manage,
+and if you are in a busy gym, keep each head unit near its meter, since ANT+
+drop-outs from a crowded band show up as missing seconds in one file only.
+
+## Calibrating before you start
+
+Do a zero offset on every meter, following the manufacturer's instructions,
+immediately before each run and after a few minutes of easy pedalling — most
+meters drift with temperature, and a meter that has been in a cold garage will
+read differently over the first ten minutes than it does later.
+
+Do not re-zero one meter mid-ride. A step change in one series and not the
+other is not something the analysis models: it will average the before and
+after into a single bias, and the limits of agreement will widen without any
+indication of why.
+
+## What to actually ride
+
+Two things the analysis needs pull in opposite directions, and this is the part
+worth planning.
+
+**The alignment needs features.** `align_rides()` recovers each clock offset by
+sliding one power trace against another and taking the offset with the highest
+correlation. A block at constant power correlates about equally well at every
+offset, so there is no peak to find, and `check_alignment()` returns
+`unresolved`, forces the offset to zero and warns. That is the honest answer,
+but it means a clean ERG session — the most controlled ride you can do — is the
+worst possible ride for establishing what the offset was.
+
+**The by-level comparison needs coverage.** `agreement_by_level()` bins seconds
+by the mean of the two readings, so a bin only exists if you spent time there.
+Two hundred seconds at 250 W tells you about the meters at 250 W and nothing
+about them at 400 W.
+
+So structure the run in two parts.
+
+*Start with a synchronisation block.* Four to six sharp surges — eight to ten
+seconds well above your average for the day — each separated by about thirty
+seconds of soft pedalling or, better, complete coasting. Coast-to-power
+transitions are the sharpest edges available and are exactly what the
+cross-correlation locks onto. The coasting seconds are then dropped from the
+agreement calculation, so this block costs you nothing in the comparison. It
+takes about four minutes.
+
+*Then ride steps.* Choose five or six targets spanning the range you care about
+— something like 55, 70, 85, 100 and 110 per cent of FTP — and hold each for
+four to five minutes. Steps are better than a ramp: a ramp sweeps every bin but
+leaves each one with a handful of transient seconds, recorded while both meters
+were still responding to a change, and meters respond at different speeds. Each
+step instead fills one or two bins with a few hundred stable seconds, and the
+transitions between steps populate the bins in between.
+
+*Repeat the synchronisation block at the end* if the session is longer than an
+hour. It is not needed for the alignment, but it lets you check for clock drift:
+align the first ten minutes and the last ten minutes separately, and if the two
+offsets differ, one unit's clock moved during the ride and a single constant
+correction is not enough for that file.
+
+## Comparing a trainer against a bike-mounted meter
+
+A crank, spider or pedal meter measures power at the pedals; a trainer or hub
+measures it after the chain has been through the drivetrain. The difference is
+real, typically two to four per cent, and it is not disagreement between the
+meters — it is the transmission.
+
+Nothing in the package knows this. `power_agreement()` will report a `gain_pc`
+of a few per cent for a pair of perfectly accurate devices in that
+configuration, so read the number net of an expected drivetrain loss rather
+than as pure measurement error. A clean drivetrain in a straight chainline sits
+at the low end of the range and a worn one at the high end, which is itself a
+reason not to try to pin the figure down too precisely.
+
+Two bike-mounted meters do not have this problem, and pedals against a
+crank-based meter differ by only the bottom-bracket bearings, which is small
+enough to ignore.
+
+## Three meters and two recorders
+
+If you have three meters but can only record two at a time, ride two sessions
+with one meter common to both: run one carries A and B, run two carries B and
+C. B is the bridge, and `chain_sources()` gets A against C from the two gains
+relative to B.
+
+That comparison rests on B having read identically on both days, which the ride
+files cannot test, so the protocol is about protecting the assumption:
+
+- Ride the two runs as close together as you can — back to back on the same day
+  is much better than a week apart.
+- Change nothing about B in between. No reinstallation, no battery change, no
+  firmware update, no crank-length or scale-factor edits.
+- Cover the same power range in both runs. Use the same step targets, not just
+  a similar overall effort. A gain estimated at endurance pace in one run and
+  at threshold in the other is not really the same quantity.
+- Keep the conditions comparable, particularly temperature.
+
+`chain_report()` reports what can be checked — the overlap in power range
+between the runs — and states the assumption in the output. Keep that statement
+wherever the numbers go.
+
+## Getting the files out and named
+
+Export from each device as FIT where you can. GPX works, but Strava's GPX
+export only carries power that a meter actually recorded: power Strava
+estimated from speed and gradient is not in the file, so a ride recorded
+without a meter arrives with no power channel at all, which is an error rather
+than a column of `NA`.
+
+Name each file `<run>_<source>`, where the run is the session and the source is
+the meter:
+
+```
+rides/
+  run1_kickr.fit
+  run1_assioma.fit
+  run2_assioma.fit
+  run2_quarq.fit
+```
+
+Then `ride_spec_from_names()` builds the table `read_rides()` wants, and a
+filename that does not split cleanly is an error rather than a silently
+mislabelled ride.
+
+```{r pipeline}
+library(cyclingpower)
+
+aligned <- list.files("rides", full.names = TRUE) |>
+  ride_spec_from_names() |>
+  read_rides() |>
+  align_rides()
+```
+
+## Checking that the recording worked
+
+Three checks before you trust anything downstream, all worth doing while you
+could still repeat the ride.
+
+The alignment resolved:
+
+```{r check-alignment}
+alignment_report(aligned)
+```
+
+Every source should have `status` of `aligned`, and the `offset` should be a
+few seconds. An `unresolved` status means the synchronisation block was too
+soft or is missing; a large correlation with a large offset means the clocks
+really were far apart, which is fine. A low correlation on a ride you know had
+surges in it usually means the two files are not the same session.
+
+The bins are populated:
+
+```{r check-coverage}
+agreement_by_level(aligned) |>
+  dplyr::select(pair, level, seconds, bias_w)
+```
+
+The `seconds` column is there to be read. A bin resting on twenty seconds is
+not evidence of anything, and the steps are what fill the bins you care about.
+
+And, for a chained comparison, that the two runs actually covered comparable
+ground:
+
+```{r check-chain}
+chain_report(chain_sources(aligned))$coverage
+```
+
+## The short version
+
+- One recorder per meter; ANT+ where the meter offers it.
+- One-second recording, auto-pause off, clocks set from GPS.
+- Zero every meter after a warm-up, immediately before the run.
+- Open with four to six coast-to-sprint surges so the alignment has something
+  to lock onto.
+- Then five or six steady steps across the range you want to report on.
+- Expect a trainer to read two to four per cent below a pedal or crank meter.
+- Name the files `<run>_<source>` and check `alignment_report()` first.
