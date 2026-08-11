@@ -244,8 +244,13 @@ level_dependence <- function(by_level) {
       low_gain = min(.data$gain_pc),
       high_band = .data$band_range[which.max(.data$gain_pc)],
       high_gain = max(.data$gain_pc),
-      separated = .data$gain_lo[which.max(.data$gain_pc)] >
-        .data$gain_hi[which.min(.data$gain_pc)],
+      # A band too thin to resample has no interval, so nothing about it is
+      # separated from anything. isTRUE() rather than a comparison, so that
+      # reads as FALSE rather than travelling downstream as NA.
+      separated = isTRUE(
+        .data$gain_lo[which.max(.data$gain_pc)] >
+          .data$gain_hi[which.min(.data$gain_pc)]
+      ),
       .groups = "drop"
     )
 }

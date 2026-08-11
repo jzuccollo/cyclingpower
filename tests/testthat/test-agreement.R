@@ -196,6 +196,23 @@ test_that("band labels carry the width they were binned at", {
   expect_equal(wider$band_range[wider$band == 75], "50–100 W")
 })
 
+test_that("a band too thin to resample does not count as separated", {
+  # Narrow bands and no floor under them, so the extremes of the range hold a
+  # handful of seconds and the bootstrap declines to resample them. An interval
+  # that does not exist cannot be separated from anything, and saying so as NA
+  # rather than FALSE takes down everything downstream that branches on it.
+  aligned <- align_rides(two_source_rides(gain = 1.03, noise = 6))
+  by_level <- withr::with_seed(
+    1,
+    agreement_by_level(aligned, width = 5, min_seconds = 0)
+  )
+  spans <- level_dependence(by_level)
+
+  expect_true(anyNA(by_level$gain_lo))
+  expect_false(is.na(spans$separated))
+  expect_false(spans$separated)
+})
+
 test_that("the same seed gives the same band intervals", {
   # Guards the block_indices() extraction: the resampled draws are now shared
   # between the two statistics, so a change in how they are generated would
