@@ -41,7 +41,8 @@ chain_sources <- function(
   replicates = 1000
 ) {
   bridge <- resolve_bridge(aligned, bridge)
-  pairs <- bridge_pairs(aligned, bridge, min_power)
+  seconds <- paired_seconds(aligned, min_power)
+  pairs <- bridge_pairs(seconds, bridge)
 
   if (nrow(pairs) == 0) {
     stop(
@@ -53,34 +54,21 @@ chain_sources <- function(
     )
   }
 
-  groups <- split(pairs, list(pairs$run, pairs$source), drop = TRUE)
-
-  # Each run is resampled on its own, which is what makes the interval on a
-  # chained comparison wider than either of the gains it is built from.
-  estimates <- lapply(groups, function(g) {
-    list(
-      run = g$run[[1]],
-      source = g$source[[1]],
-      seconds = nrow(g),
-      point = mean(g$log_gain),
-      draws = block_bootstrap_draws(
-        nrow(g),
-        function(idx) mean(g$log_gain[idx]),
-        block,
-        replicates
-      )
-    )
-  })
-
-  pooled <- pool_by_source(estimates)
-  pooled[[bridge]] <- list(
-    source = bridge,
-    seconds = NA_integer_,
-    point = 0,
-    draws = rep(0, replicates)
+  # Sources the bridge never met cannot be placed on its scale, so resampling
+  # the pairs they belong to would only spend the time.
+  linked <- c(unique(pairs$source), bridge)
+  observed <- pair_estimates(
+    dplyr::filter(
+      seconds,
+      .data$source_a %in% linked,
+      .data$source_b %in% linked
+    ),
+    block,
+    replicates
   )
+  gains <- bridge_gains(observed, unique(pairs$source), bridge, replicates)
 
-  out <- compare_all_sources(pooled, aligned, bridge)
+  out <- compare_all_sources(gains, observed, bridge)
   attr(out, "chain") <- chain_diagnostics(pairs, bridge)
   out
 }
@@ -146,11 +134,19 @@ resolve_bridge <- function(aligned, bridge) {
   candidates
 }
 
-#' Log gain of each source against the bridge. `paired_seconds()` orders pairs
-#' alphabetically, so the ratio is flipped when the bridge sorts first.
+#' A pair is keyed on its two sources in the order `paired_seconds()` puts them,
+#' which is alphabetical, so a key built from either end finds the same rows.
 #' @noRd
-bridge_pairs <- function(aligned, bridge, min_power) {
-  paired_seconds(aligned, min_power) |>
+pair_key <- function(sources) {
+  paste(sort(sources), collapse = "|")
+}
+
+#' The seconds a pair rode together, restricted to the pairs involving the
+#' bridge and oriented as log(source / bridge). Only the coverage diagnostics
+#' need this now; the gains themselves come from `pair_estimates()`.
+#' @noRd
+bridge_pairs <- function(seconds, bridge) {
+  seconds |>
     dplyr::filter(.data$source_a == bridge | .data$source_b == bridge) |>
     dplyr::mutate(
       source = ifelse(.data$source_a == bridge, .data$source_b, .data$source_a),
@@ -162,23 +158,47 @@ bridge_pairs <- function(aligned, bridge, min_power) {
     )
 }
 
-#' A meter can appear against the bridge in several runs, which happens as soon
-#' as you ride the same pair twice. Combine those into one gain weighted by the
-#' seconds behind each, keeping the bootstrap draws on the same weights so the
-#' interval narrows as the evidence accumulates.
+#' Every pair that was actually ridden together, as a log gain of the first
+#' source over the second with its bootstrap draws, pooled over the runs
+#' carrying the pair.
+#'
+#' Each run is resampled on its own, which is what makes the interval on a
+#' chained comparison wider than either of the gains it is built from.
 #' @noRd
-pool_by_source <- function(estimates) {
-  by_source <- split(
-    estimates,
-    vapply(estimates, `[[`, character(1), "source")
-  )
+pair_estimates <- function(seconds, block, replicates) {
+  key <- paste(seconds$source_a, seconds$source_b, sep = "|")
 
-  lapply(by_source, function(group) {
+  split(seconds, list(key, seconds$run), drop = TRUE) |>
+    lapply(function(g) {
+      list(
+        pair = paste(g$source_a[[1]], g$source_b[[1]], sep = "|"),
+        seconds = nrow(g),
+        point = mean(g$log_ratio),
+        draws = block_bootstrap_draws(
+          nrow(g),
+          function(idx) mean(g$log_ratio[idx]),
+          block,
+          replicates
+        )
+      )
+    }) |>
+    pool_runs()
+}
+
+#' A pair can appear in several runs, which happens as soon as you ride the same
+#' pair twice. Combine those into one gain weighted by the seconds behind each,
+#' keeping the bootstrap draws on the same weights so the interval narrows as
+#' the evidence accumulates.
+#' @noRd
+pool_runs <- function(estimates) {
+  by_pair <- split(estimates, vapply(estimates, `[[`, character(1), "pair"))
+
+  lapply(by_pair, function(group) {
     seconds <- vapply(group, `[[`, numeric(1), "seconds")
     weight <- seconds / sum(seconds)
 
     list(
-      source = group[[1]]$source,
+      pair = group[[1]]$pair,
       seconds = sum(seconds),
       point = sum(weight * vapply(group, `[[`, numeric(1), "point")),
       draws = Reduce(`+`, Map(function(g, w) w * g$draws, group, weight))
@@ -186,56 +206,57 @@ pool_by_source <- function(estimates) {
   })
 }
 
+#' Each source on the bridge's scale, which is what makes two meters from
+#' different runs comparable. The gain is the pair's own estimate, negated where
+#' the bridge sorts first, since a pair is stored as log(first / second).
 #' @noRd
-compare_all_sources <- function(named, aligned, bridge) {
-  sources <- sort(names(named))
-  shared <- shared_runs(aligned)
+bridge_gains <- function(observed, sources, bridge, replicates) {
+  gains <- lapply(sources, function(source) {
+    estimate <- observed[[pair_key(c(source, bridge))]]
+    direction <- if (bridge < source) -1 else 1
+
+    list(
+      point = direction * estimate$point,
+      draws = direction * estimate$draws
+    )
+  })
+  names(gains) <- sources
+
+  gains[[bridge]] <- list(point = 0, draws = rep(0, replicates))
+  gains
+}
+
+#' @noRd
+compare_all_sources <- function(gains, observed, bridge) {
+  sources <- sort(names(gains))
 
   utils::combn(sources, 2, simplify = FALSE) |>
     lapply(function(pair) {
-      first <- named[[pair[[1]]]]
-      second <- named[[pair[[2]]]]
-      draws <- first$draws - second$draws
-      ci <- percentile_ci(draws)
+      # A pair that rode together is reported from its own seconds. Routing it
+      # through the bridge anyway would answer from two independent resamples a
+      # question the pair's own data settles, and call the result direct.
+      estimate <- observed[[pair_key(pair)]]
+      chained <- is.null(estimate)
+
+      if (chained) {
+        estimate <- list(
+          point = gains[[pair[[1]]]]$point - gains[[pair[[2]]]]$point,
+          draws = gains[[pair[[1]]]]$draws - gains[[pair[[2]]]]$draws
+        )
+      }
+      ci <- percentile_ci(estimate$draws)
 
       tibble::tibble(
         source_a = pair[[1]],
         source_b = pair[[2]],
-        basis = if (shared[[paste(pair, collapse = "|")]]) {
-          "direct"
-        } else {
-          "chained"
-        },
-        gain_pc = 100 * (exp(first$point - second$point) - 1),
+        basis = if (chained) "chained" else "direct",
+        gain_pc = 100 * (exp(estimate$point) - 1),
         gain_lo = 100 * (exp(ci[[1]]) - 1),
         gain_hi = 100 * (exp(ci[[2]]) - 1),
-        via = if (shared[[paste(pair, collapse = "|")]]) {
-          NA_character_
-        } else {
-          bridge
-        }
+        via = if (chained) bridge else NA_character_
       )
     }) |>
     dplyr::bind_rows()
-}
-
-#' @noRd
-shared_runs <- function(aligned) {
-  presence <- unique(aligned[, c("run", "source")])
-  by_run <- split(presence$source, presence$run)
-  sources <- sort(unique(presence$source))
-
-  keys <- utils::combn(sources, 2, simplify = FALSE)
-  stats::setNames(
-    vapply(
-      keys,
-      function(pair) {
-        any(vapply(by_run, function(s) all(pair %in% s), logical(1)))
-      },
-      logical(1)
-    ),
-    vapply(keys, paste, character(1), collapse = "|")
-  )
 }
 
 #' The chain assumes the bridge behaved the same on both days. That cannot be
@@ -274,10 +295,11 @@ chain_diagnostics <- function(pairs, bridge) {
 
 #' How the chained comparison varies with power
 #'
-#' The level-wise counterpart to [chain_sources()]. Each run's gain against the
-#' bridge is estimated within power bands, and the bands kept are those both
-#' runs actually covered: a gain chained from bands one run never rode is
-#' extrapolation, not measurement.
+#' The level-wise counterpart to [chain_sources()], and on the same rule: a pair
+#' that rode together is compared within each power band from its own seconds,
+#' and only a pair that never did is chained through the bridge. The bands kept
+#' are those every run actually covered, since a gain chained from bands one run
+#' never rode is extrapolation rather than measurement.
 #'
 #' @inheritParams chain_sources
 #' @inheritParams agreement_by_level
@@ -299,42 +321,87 @@ chain_by_level <- function(
 ) {
   bridge <- resolve_bridge(aligned, bridge)
 
-  banded <- bridge_pairs(aligned, bridge, min_power) |>
+  banded <- paired_seconds(aligned, min_power) |>
     dplyr::mutate(band = floor(.data$level / width) * width + width / 2) |>
-    dplyr::group_by(.data$run, .data$source, .data$band) |>
+    dplyr::group_by(
+      .data$run,
+      .data$source_a,
+      .data$source_b,
+      .data$band
+    ) |>
     dplyr::summarise(
       seconds = dplyr::n(),
-      log_gain = mean(.data$log_gain),
+      log_ratio = mean(.data$log_ratio),
       .groups = "drop"
     ) |>
     dplyr::filter(.data$seconds >= min_seconds)
 
   common <- Reduce(intersect, split(banded$band, banded$run))
-  banded <- dplyr::filter(banded, .data$band %in% common)
 
-  sources <- sort(unique(banded$source))
-  pairs <- utils::combn(c(sources, bridge) |> sort(), 2, simplify = FALSE)
+  # A pair can appear in more than one run, and then has a row per run in every
+  # band. Pooled on seconds, the same weighting chain_sources() uses, so the two
+  # do not report different numbers for the same pair.
+  pooled <- banded |>
+    dplyr::filter(.data$band %in% common) |>
+    dplyr::group_by(.data$source_a, .data$source_b, .data$band) |>
+    dplyr::summarise(
+      log_ratio = stats::weighted.mean(.data$log_ratio, .data$seconds),
+      .groups = "drop"
+    )
+
+  sources <- bridged_sources(pooled, bridge)
+  pairs <- utils::combn(sources, 2, simplify = FALSE)
 
   lapply(pairs, function(pair) {
-    a <- band_gains(banded, pair[[1]], bridge, common)
-    b <- band_gains(banded, pair[[2]], bridge, common)
-
     tibble::tibble(
       source_a = pair[[1]],
       source_b = pair[[2]],
       band = common,
-      gain_pc = 100 * (exp(a - b) - 1)
+      gain_pc = 100 * (exp(band_pair_gain(pooled, pair, bridge, common)) - 1)
     )
   }) |>
     dplyr::bind_rows() |>
     dplyr::filter(!is.na(.data$gain_pc))
 }
 
+#' The sources a chained comparison can reach: the bridge, and everything that
+#' met it in a band both runs covered.
 #' @noRd
-band_gains <- function(banded, source, bridge, bands) {
+bridged_sources <- function(pooled, bridge) {
+  met <- pooled[pooled$source_a == bridge | pooled$source_b == bridge, ]
+  sort(unique(c(
+    bridge,
+    ifelse(met$source_a == bridge, met$source_b, met$source_a)
+  )))
+}
+
+#' Band by band, on the same rule as `compare_all_sources()`: a pair that rode
+#' together speaks for itself, and only a pair that never did goes through the
+#' bridge.
+#' @noRd
+band_pair_gain <- function(pooled, pair, bridge, bands) {
+  direct <- band_ratios(pooled, pair[[1]], pair[[2]], bands)
+  if (!all(is.na(direct))) {
+    return(direct)
+  }
+  band_gains(pooled, pair[[1]], bridge, bands) -
+    band_gains(pooled, pair[[2]], bridge, bands)
+}
+
+#' @noRd
+band_gains <- function(pooled, source, bridge, bands) {
   if (source == bridge) {
     return(rep(0, length(bands)))
   }
-  rows <- banded[banded$source == source, ]
-  rows$log_gain[match(bands, rows$band)]
+  key <- sort(c(source, bridge))
+  ratio <- band_ratios(pooled, key[[1]], key[[2]], bands)
+  if (key[[1]] == bridge) -ratio else ratio
+}
+
+#' @noRd
+band_ratios <- function(pooled, source_a, source_b, bands) {
+  rows <- pooled[
+    pooled$source_a == source_a & pooled$source_b == source_b,
+  ]
+  rows$log_ratio[match(bands, rows$band)]
 }

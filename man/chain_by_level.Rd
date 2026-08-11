@@ -29,10 +29,11 @@ A tibble with one row per band per source pair, restricted to bands
   covered by every run involved.
 }
 \description{
-The level-wise counterpart to [chain_sources()]. Each run's gain against the
-bridge is estimated within power bands, and the bands kept are those both
-runs actually covered: a gain chained from bands one run never rode is
-extrapolation, not measurement.
+The level-wise counterpart to [chain_sources()], and on the same rule: a pair
+that rode together is compared within each power band from its own seconds,
+and only a pair that never did is chained through the bridge. The bands kept
+are those every run actually covered, since a gain chained from bands one run
+never rode is extrapolation rather than measurement.
 }
 \examples{
 \dontrun{
