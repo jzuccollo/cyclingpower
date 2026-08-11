@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx creator="Garmin Edge" version="1.1"
+     xmlns="http://www.topografix.com/GPX/1/1"
+     xmlns:gpxtpx="http://www.garmin.com/xmlschemas/TrackPointExtension/v1"
+     xmlns:gpxpx="http://www.garmin.com/xmlschemas/PowerExtension/v1">
+  <trk>
+    <name>Power meter comparison</name>
+    <type>cycling</type>
+    <trkseg>
+      <trkpt lat="51.5007" lon="-0.1246">
+        <ele>12.4</ele>
+        <time>2024-03-01T09:00:00Z</time>
+        <extensions>
+          <gpxpx:PowerExtension>
+            <gpxpx:PowerInWatts>210</gpxpx:PowerInWatts>
+          </gpxpx:PowerExtension>
+          <gpxtpx:TrackPointExtension>
+            <gpxtpx:atemp>18</gpxtpx:atemp>
+            <gpxtpx:hr>132</gpxtpx:hr>
+            <gpxtpx:cad>88</gpxtpx:cad>
+          </gpxtpx:TrackPointExtension>
+        </extensions>
+      </trkpt>
+      <trkpt lat="51.5008" lon="-0.1247">
+        <ele>12.6</ele>
+        <time>2024-03-01T09:00:01Z</time>
+        <extensions>
+          <gpxpx:PowerExtension>
+            <gpxpx:PowerInWatts>224</gpxpx:PowerInWatts>
+          </gpxpx:PowerExtension>
+          <gpxtpx:TrackPointExtension>
+            <gpxtpx:atemp>18</gpxtpx:atemp>
+            <gpxtpx:hr>133</gpxtpx:hr>
+            <gpxtpx:cad>89</gpxtpx:cad>
+          </gpxtpx:TrackPointExtension>
+        </extensions>
+      </trkpt>
+      <trkpt lat="51.5009" lon="-0.1248">
+        <ele>12.9</ele>
+        <time>2024-03-01T09:00:02Z</time>
+        <extensions>
+          <gpxpx:PowerExtension>
+            <gpxpx:PowerInWatts>197</gpxpx:PowerInWatts>
+          </gpxpx:PowerExtension>
+          <gpxtpx:TrackPointExtension>
+            <gpxtpx:atemp>18</gpxtpx:atemp>
+            <gpxtpx:hr>134</gpxtpx:hr>
+            <gpxtpx:cad>87</gpxtpx:cad>
+          </gpxtpx:TrackPointExtension>
+        </extensions>
+      </trkpt>
+    </trkseg>
+  </trk>
+</gpx>
