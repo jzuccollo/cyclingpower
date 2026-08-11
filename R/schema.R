@@ -43,12 +43,18 @@ canonicalise <- function(x, file) {
 
   x <- x[, intersect(canonical_columns(), names(x)), drop = FALSE]
 
+  numeric_cols <- setdiff(names(x), "time")
+  x[numeric_cols] <- lapply(x[numeric_cols], function(col) {
+    suppressWarnings(as.numeric(col))
+  })
+
+  # After coercion, not before: a GPX with an empty <power/> on every trackpoint
+  # has a power column made entirely of "", which is present and not NA but
+  # carries nothing. Checking the raw column passes it through as an all-NA
+  # numeric that fails much later with nothing to point at.
   if (!"power" %in% names(x) || all(is.na(x$power))) {
     abort_no_power(file)
   }
-
-  numeric_cols <- setdiff(names(x), "time")
-  x[numeric_cols] <- lapply(x[numeric_cols], as.numeric)
 
   x <- x[order(x$time), , drop = FALSE]
   tibble::as_tibble(x)

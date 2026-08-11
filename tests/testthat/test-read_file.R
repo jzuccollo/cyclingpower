@@ -36,6 +36,34 @@ test_that("a GPX with no power channel errors rather than returning NA", {
   expect_error(read_file(ext("nopower.gpx")), "No power data found")
 })
 
+test_that("a GPX whose power elements are empty errors too", {
+  # An empty <power/> is present on every point, so the column is neither
+  # missing nor NA until it is coerced to a number. Checked before coercion, it
+  # passes as a column of "" and becomes an all-NA power channel that fails much
+  # later with nothing to point at.
+  empty <- tempfile(fileext = ".gpx")
+  writeLines(
+    c(
+      '<?xml version="1.0" encoding="UTF-8"?>',
+      '<gpx creator="Test" version="1.1"',
+      '     xmlns="http://www.topografix.com/GPX/1/1">',
+      "  <trk><trkseg>",
+      paste0(
+        '    <trkpt lat="51.5007" lon="-0.1246">',
+        "<time>2024-03-01T09:00:0",
+        0:2,
+        "Z</time>",
+        "<extensions><power/></extensions></trkpt>"
+      ),
+      "  </trkseg></trk>",
+      "</gpx>"
+    ),
+    empty
+  )
+
+  expect_error(read_file(empty), "No power data found")
+})
+
 test_that("unsupported extensions are rejected", {
   expect_error(read_file("ride.tcx"), "not a FIT, GPX or CSV file")
 })
