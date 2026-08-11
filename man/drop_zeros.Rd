@@ -2,13 +2,22 @@
 % Please edit documentation in R/coggan_formulas.r
 \name{drop_zeros}
 \alias{drop_zeros}
-\title{drop_zeros}
+\title{Drop coasting seconds}
 \usage{
 drop_zeros(power_data)
 }
 \arguments{
-\item{power_data}{dbl}
+\item{power_data}{Numeric vector of per-second power in watts.}
+}
+\value{
+The input with zeros removed.
 }
 \description{
-drop_zeros
+A utility for the times you want a metric over pedalling only. The metrics
+in this package follow the standard definitions and count coasting, so
+compose this yourself where you want the other behaviour:
+`average_power(drop_zeros(x))`.
+}
+\examples{
+drop_zeros(c(200, 0, 220, 0, 210))
 }

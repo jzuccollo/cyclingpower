@@ -2,15 +2,23 @@
 % Please edit documentation in R/coggan_formulas.r
 \name{tss}
 \alias{tss}
-\title{tss}
+\title{Training stress score}
 \usage{
 tss(power_data, ftp)
 }
 \arguments{
-\item{power_data}{dbl}
+\item{power_data}{Numeric vector of per-second power in watts.}
 
-\item{ftp}{dbl FTP}
+\item{ftp}{Functional threshold power in watts.}
+}
+\value{
+Training stress score.
 }
 \description{
-tss
+One hour at threshold scores 100. Duration is taken as the number of
+observations, so the data must be sampled once per second; smart recording
+will understate it.
+}
+\examples{
+tss(rep(275, 3600), ftp = 275)
 }

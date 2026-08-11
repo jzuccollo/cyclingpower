@@ -2,15 +2,21 @@
 % Please edit documentation in R/coggan_formulas.r
 \name{intensity_factor}
 \alias{intensity_factor}
-\title{intensity_factor}
+\title{Intensity factor}
 \usage{
 intensity_factor(power_data, ftp)
 }
 \arguments{
-\item{power_data}{dbl}
+\item{power_data}{Numeric vector of per-second power in watts.}
 
-\item{ftp}{dbl FTP}
+\item{ftp}{Functional threshold power in watts.}
+}
+\value{
+Intensity factor, where 1 is riding at threshold.
 }
 \description{
-intensity_factor
+Normalised power as a fraction of threshold power.
+}
+\examples{
+intensity_factor(rep(210, 600), ftp = 275)
 }
