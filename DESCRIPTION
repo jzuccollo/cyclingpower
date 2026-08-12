@@ -1,13 +1,15 @@
 Package: cyclingpower
 Type: Package
 Title: Compare readings from multiple cycling power meters
-Version: 0.2.0
+Version: 0.3.0
 Author: jz
 Maintainer: jz <jameszuccollo@gmail.com>
-Description: Read FIT and GPX ride files recorded by two or more power
+Description: Read FIT, GPX and CSV ride files recorded by two or more power
     meters, align them onto a common clock, and quantify how their readings
     differ overall and across the power range. Supports linking a third
-    meter to the first two through a bridge meter common to both rides.
+    meter to the first two through a bridge meter common to both rides. The
+    bundled app can also record the meters itself over Web Bluetooth, so
+    every source is stamped by one clock.
 License: GPL-3
 Encoding: UTF-8
 LazyData: true
@@ -20,7 +22,8 @@ Suggests:
     knitr,
     shiny,
     shinyFiles,
-    testthat
+    testthat,
+    V8
 VignetteBuilder: knitr
 Imports:
     dplyr,

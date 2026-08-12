@@ -41,10 +41,24 @@ install.packages(c("shiny", "bslib", "DT", "shinyFiles"))
 ## Recording the rides
 
 The comparison is only as good as the recording, and the ways it goes wrong
-cannot be repaired afterwards. A power meter broadcasts but a recorder records
-one power source, so two meters need two recorders — ANT+ is one-to-many, so
-pairing each meter to its own head unit over ANT+ avoids the Bluetooth
-one-connection limit.
+cannot be repaired afterwards. There are two ways to get the files, and the
+choice decides how much can go wrong.
+
+The app can record the meters itself. Open the Record tab in Chrome or Edge,
+pair each meter over Bluetooth, and one clock stamps every sample, so the
+sources share a timebase by construction instead of having one recovered from
+them afterwards. Auto-pause, smart recording and an unset head unit clock are
+all failure modes of independent recorders and none of them can happen here. The
+files land in a directory the Rides tab scans like any other. Two things to know
+before starting: a meter holds one Bluetooth connection at a time, so erg
+targets have to be commanded over ANT+ while the page has the trainer, and the
+radio path is the one part of the package with no automated test behind it, so
+ride the first session against a head unit you trust and compare the files.
+
+Otherwise each meter keeps its own recorder. A power meter broadcasts but a
+recorder records one power source, so two meters need two recorders — ANT+ is
+one-to-many, so pairing each meter to its own head unit over ANT+ avoids the
+Bluetooth one-connection limit.
 
 Then, on every recorder:
 
@@ -61,9 +75,18 @@ one for establishing what the offset was. Then hold five or six steady steps
 across the power range, so `agreement_by_level()` has enough seconds in each
 bin to say anything.
 
-`vignette("recording_rides")` has the full protocol, including chaining a third
-meter across two sessions and what to expect when comparing a trainer against a
-pedal or crank meter.
+Recording in the app changes that advice, because the compromise between needing
+features and needing coverage was a consequence of the recordings being
+independent. Erg becomes the best ride rather than the worst: a ladder up and
+back down through five targets puts a chosen number of seconds into each band.
+Keep a short block of surges anyway, though — not to find the offset, which is
+zero by construction, but because `check_alignment()` reports a featureless ride
+and a correctly stamped one identically, so the surges are what make a resolved
+zero evidence rather than a default.
+
+`vignette("recording_rides")` has the full protocol for both routes, including
+chaining a third meter across two sessions and what to expect when comparing a
+trainer against a pedal or crank meter.
 
 ## Usage
 

@@ -220,6 +220,62 @@ app_theme <- bslib::bs_theme(
 
     /* Alerts read as notes rather than as warnings shouted at you. */
     .alert { border: 1px solid; border-left-width: 3px; }
+
+    /* Recording. The chips and the canvas are painted by record.js rather than
+       rendered by R, so their styling lives here and not in an inline style
+       attribute the JavaScript would have to carry. */
+    #meter_status {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-bottom: 0.75rem;
+      min-height: 2rem;
+    }
+    .meter-chip {
+      display: flex;
+      align-items: baseline;
+      gap: 0.5rem;
+      border: 1px solid #e7e5e4;
+      border-radius: 0.4rem;
+      background: #ffffff;
+      padding: 0.35rem 0.6rem;
+      font-size: 0.9rem;
+    }
+    .meter-dot {
+      width: 0.6rem;
+      height: 0.6rem;
+      border-radius: 50%;
+      align-self: center;
+    }
+    .meter-name { font-weight: 600; }
+    .meter-watts {
+      font-variant-numeric: tabular-nums;
+      min-width: 4.5rem;
+      text-align: right;
+    }
+    .meter-state {
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: #78716c;
+    }
+    /* A meter that has gone has to be legible from across a room, mid-effort. */
+    .meter-reconnecting, .meter-lost, .meter-failed {
+      border-color: #b45309;
+      background: #fdf5e6;
+    }
+    .meter-reconnecting .meter-state,
+    .meter-lost .meter-state,
+    .meter-failed .meter-state { color: #b45309; font-weight: 600; }
+
+    #record_trace {
+      width: 100%;
+      height: 240px;
+      display: block;
+      background: #ffffff;
+      border: 1px solid #e7e5e4;
+      border-radius: 0.4rem;
+    }
     "
   )
 
@@ -227,6 +283,19 @@ ui <- bslib::page_navbar(
   title = "cyclingpower",
   id = "nav",
   theme = app_theme,
+
+  # The tabs run in the order the work happens, but the app opens on Rides:
+  # most sessions are analysing files that already exist, and landing someone
+  # in Safari on a tab whose only content is that they need Chrome is a poor
+  # first screen for a package that is mostly an analyser.
+  selected = "Rides",
+
+  # power-packet.js first: it defines the parser record.js calls, and holds
+  # nothing else, so the tests can run it without a browser.
+  header = tags$head(
+    tags$script(src = "power-packet.js"),
+    tags$script(src = "record.js")
+  ),
 
   # bslib fills the viewport by default, which turns every card into a fixed
   # porthole with a hidden inner scroll — and, because plotOutput(height =
@@ -277,6 +346,138 @@ ui <- bslib::page_navbar(
     sidebar_heading("Power bands"),
     sliderInput("width", "Band width (W)", 10, 100, 25, 5),
     sliderInput("min_seconds", "Minimum seconds per band", 0, 300, 30, 10)
+  ),
+
+  bslib::nav_panel(
+    "Record",
+    guidance(
+      "Pair each meter to this page once and one clock stamps every sample, so ",
+      "the recordings share a timebase by construction rather than having one ",
+      "recovered from them afterwards. The files land in a directory the Rides ",
+      "tab reads like any other."
+    ),
+    uiOutput("ble_status"),
+
+    # Nothing below is drawn unless the browser can actually do it. A button
+    # that opens no chooser is worse than an explanation.
+    conditionalPanel(
+      condition = "input.ble_supported === true",
+
+      bslib::card(
+        bslib::card_header("The meters"),
+        guidance(
+          "The browser asks which device to use each time and will not open ",
+          "that chooser by itself, so pairing three meters is three presses."
+        ),
+        div(
+          class = "alert alert-warning",
+          strong("A meter can hold one Bluetooth connection at a time. "),
+          "While this page has the trainer, Zwift and TrainerRoad cannot: ",
+          "pair the training app to it over ANT+ instead. That is also how erg ",
+          "targets have to be commanded during a recording."
+        ),
+        # Wrapped, because a card body is a flex column and a bare button in
+        # one stretches the full width of the card.
+        div(
+          class = "d-flex mb-3",
+          actionButton("pair_meter", "Pair a meter", class = "btn-primary")
+        ),
+        # Painted by record.js from the connection state it already holds.
+        # Round-tripping live watts through R to redraw this would put the
+        # recorder's responsiveness behind the analysis tabs' work.
+        div(id = "meter_status"),
+        uiOutput("meter_labels")
+      ),
+
+      bslib::card(
+        bslib::card_header("The recording"),
+        div(
+          class = "alert alert-warning",
+          strong("Zero-offset every meter now. "),
+          "After a few minutes of easy pedalling and immediately before you ",
+          "start, following each manufacturer's instructions. The whole ",
+          "comparison rests on it, and it cannot be done afterwards."
+        ),
+        div(
+          class = "d-flex gap-2 align-items-end flex-wrap",
+          div(
+            class = "flex-grow-1",
+            style = "min-width: 240px;",
+            textInput("record_dir", "Directory", width = "100%")
+          ),
+          div(
+            class = "mb-3",
+            shinyFiles::shinyDirButton(
+              "record_dir_choose",
+              "Browse…",
+              "Choose a directory to record into"
+            )
+          ),
+          textInput("record_run", "Run", value = "run1", width = "140px")
+        ),
+        helpText(
+          "Files are named ",
+          tags$code("<run>_<source>.csv"),
+          ", which is what the Rides tab parses, so both labels take letters, ",
+          "digits and hyphens only. An existing file is never written over."
+        ),
+        div(
+          class = "d-flex gap-2 align-items-center flex-wrap mb-3",
+          actionButton(
+            "start_record",
+            "Start recording",
+            class = "btn-primary"
+          ),
+          actionButton("stop_record", "Stop", class = "btn-outline-secondary")
+        ),
+        uiOutput("record_status")
+      ),
+
+      bslib::card(
+        bslib::card_header("Live trace"),
+        guidance(
+          "The last three minutes, drawn in the browser from the samples as ",
+          "they arrive. It is a check that the meters are tracking each ",
+          "other's shape, not the analysis — that comes off the files."
+        ),
+        tags$canvas(id = "record_trace")
+      ),
+
+      details(
+        "What to ride",
+        p(
+          "One clock stamping every meter makes the offset zero by ",
+          "construction, so the surges that ",
+          tags$code("vignette(\"recording_rides\")"),
+          " asks for are no longer there to find it. Erg mode becomes the ",
+          "best ride rather than the worst, because it puts a chosen number ",
+          "of seconds into a chosen band."
+        ),
+        p(
+          tags$b("Keep a short sync block anyway. "),
+          "With no feature to lock onto, ",
+          tags$code("check_alignment()"),
+          " cannot tell that the clocks agree from that the traces cannot be ",
+          "compared at all: it collapses both into ",
+          tags$code("unresolved"),
+          ", forces the offset to zero and warns. A recorder that stamped ",
+          "every meter wrongly would pass that check exactly as a correct one ",
+          "does. Four surges of eight seconds, each after thirty seconds of ",
+          "coasting, are what make a resolved zero evidence rather than a ",
+          "default."
+        ),
+        p(
+          tags$b("Then a ladder, up and then down. "),
+          "55, 70, 85, 100 and 110% of FTP, four minutes each, in erg, and ",
+          "then the same targets in reverse. A meter reading high because it ",
+          "has warmed up gives different numbers at the same target on the ",
+          "way down; a genuinely level-dependent one repeats itself. Ridden ",
+          "in one direction only the two are indistinguishable. Do not surge ",
+          "in erg — the trainer rounds off the edge the sync block exists to ",
+          "provide."
+        )
+      )
+    )
   ),
 
   bslib::nav_panel(
@@ -825,6 +1026,314 @@ server <- function(input, output, session) {
   })
 
   observeEvent(input$to_alignment, bslib::nav_select("nav", "Alignment"))
+
+  # ---- Record ------------------------------------------------------------
+
+  # The handoff between the two halves of the app is the filesystem and nothing
+  # else: the recorder writes into a directory, the Rides tab scans it. Analysis
+  # is repeatable and recording is not, so a bug in the analysis costs a re-run
+  # while a bug in the recorder costs a ride, and the boundary keeps one from
+  # taking the other down.
+
+  shinyFiles::shinyDirChoose(
+    input,
+    "record_dir_choose",
+    roots = volumes,
+    session = session
+  )
+
+  updateTextInput(
+    session,
+    "record_dir",
+    value = if (is.null(opening_dir)) {
+      file.path(path.expand("~"), "cyclingpower-rides")
+    } else {
+      opening_dir
+    }
+  )
+
+  observeEvent(input$record_dir_choose, {
+    chosen <- shinyFiles::parseDirPath(volumes, input$record_dir_choose)
+    if (length(chosen) > 0) {
+      updateTextInput(session, "record_dir", value = as.character(chosen))
+    }
+  })
+
+  # What the page reported it could do, rendered only once it has said so. Until
+  # then there is nothing honest to show.
+  output$ble_status <- renderUI({
+    if (is.null(input$ble_supported) || isTRUE(input$ble_supported)) {
+      return(NULL)
+    }
+    div(
+      class = "alert alert-danger",
+      strong("This browser cannot record. "),
+      "Recording needs Web Bluetooth, which Chrome and Edge have and Safari ",
+      "and Firefox do not — WebKit has never shipped it and Mozilla declined ",
+      "the specification. Open the app in Chrome to record, or record on head ",
+      "units as before and scan the files on the Rides tab."
+    )
+  })
+
+  meters <- reactiveVal(list())
+  meter_states <- reactiveVal(list())
+
+  observeEvent(input$meter_paired, {
+    paired <- input$meter_paired
+    meters(c(
+      meters(),
+      list(list(
+        slot = paired$slot,
+        name = paired$name,
+        colour = paired$colour
+      ))
+    ))
+  })
+
+  observeEvent(input$meter_state, {
+    states <- meter_states()
+    states[[as.character(input$meter_state$slot)]] <- input$meter_state$state
+    meter_states(states)
+  })
+
+  # Advertised names are ASSIOMA-12345 and KICKR CORE 8422, which are neither
+  # filenames nor anything you want in a chart legend. A starting point to
+  # overwrite, not a decision.
+  slug <- function(name) {
+    out <- tolower(gsub("[^A-Za-z0-9]+", "", name))
+    if (nzchar(out)) out else "meter"
+  }
+
+  # Isolated, and re-rendered only when the set of meters changes: reading the
+  # boxes reactively would rebuild the whole list on every keystroke and take
+  # the cursor with it.
+  output$meter_labels <- renderUI({
+    paired <- meters()
+    if (length(paired) == 0) {
+      return(p(
+        class = "small text-body-secondary mb-0",
+        "No meters paired yet."
+      ))
+    }
+
+    rows <- lapply(paired, function(meter) {
+      id <- paste0("label_", meter$slot)
+      current <- isolate(input[[id]])
+      div(
+        class = "d-flex gap-2 align-items-end flex-wrap mb-2",
+        div(
+          style = "min-width: 180px;",
+          textInput(
+            id,
+            paste("Source label for", meter$name),
+            value = if (is.null(current) || !nzchar(current)) {
+              slug(meter$name)
+            } else {
+              current
+            }
+          )
+        ),
+        div(
+          class = "mb-3",
+          actionButton(
+            paste0("drop_", meter$slot),
+            "Unpair",
+            class = "btn-sm btn-outline-secondary"
+          )
+        )
+      )
+    })
+
+    tagList(
+      p(
+        class = "small text-body-secondary mb-2",
+        "The source label names the meter in every chart and becomes part of ",
+        "the filename."
+      ),
+      rows
+    )
+  })
+
+  # One observer per slot, created when the slot appears. observeEvent on a
+  # dynamically named input cannot be written once for all of them.
+  observeEvent(meters(), {
+    for (meter in meters()) {
+      local({
+        slot <- meter$slot
+        id <- paste0("drop_", slot)
+        if (is.null(session$userData[[id]])) {
+          session$userData[[id]] <- observeEvent(input[[id]], {
+            session$sendCustomMessage("meter_drop", list(slot = slot))
+            meters(Filter(function(m) m$slot != slot, meters()))
+          })
+        }
+      })
+    }
+  })
+
+  recording <- reactiveVal(NULL)
+  record_error <- reactiveVal(NULL)
+  last_recording <- reactiveVal(NULL)
+
+  meter_labels <- reactive({
+    stats::setNames(
+      lapply(meters(), function(m) input[[paste0("label_", m$slot)]]),
+      vapply(meters(), function(m) as.character(m$slot), character(1))
+    )
+  })
+
+  observeEvent(input$start_record, {
+    labels <- isolate(meter_labels())
+
+    if (length(labels) == 0) {
+      record_error("Pair at least one meter before recording.")
+      return()
+    }
+    # Without this an unlabelled meter drops out of the list sent to the page,
+    # which then has no name to file its samples under and quietly records
+    # everything except that meter.
+    if (any(vapply(labels, function(x) !isTRUE(nzchar(x)), logical(1)))) {
+      record_error("Every paired meter needs a source label.")
+      return()
+    }
+    sources <- unlist(labels, use.names = FALSE)
+
+    # A boundary worth catching rather than letting through: an error in an
+    # observer tears the session down, and every one of these is something the
+    # user can act on — a name with an underscore in it, a directory that is
+    # not writable, a run already recorded.
+    opened <- try(
+      start_recording(input$record_dir, input$record_run, sources),
+      silent = TRUE
+    )
+    if (inherits(opened, "try-error")) {
+      record_error(conditionMessage(attr(opened, "condition")))
+      return()
+    }
+
+    record_error(NULL)
+    last_recording(NULL)
+    recording(opened)
+    session$sendCustomMessage("record_start", list(labels = labels))
+  })
+
+  # The page sends the browser's clock at arrival, as ISO 8601 with the
+  # trailing Z, and it is written through unaltered. Re-stamping here would put
+  # the websocket's latency into the timestamps and lose the one property the
+  # whole arrangement exists for.
+  samples_frame <- function(rows) {
+    data.frame(
+      source = vapply(rows, function(r) r$source, character(1)),
+      time = vapply(rows, function(r) r$time, character(1)),
+      power = vapply(rows, function(r) as.numeric(r$power), numeric(1)),
+      stringsAsFactors = FALSE
+    )
+  }
+
+  # Priority, and deliberately above the stop observer's. Stopping queues a
+  # final batch from the page before the button press reaches the server, and
+  # both can arrive in one flush; without the ordering the last half-second of
+  # a ride would be written after the files had been closed.
+  observeEvent(
+    input$samples,
+    {
+      open <- recording()
+      req(open)
+      recording(record_samples(open, samples_frame(input$samples$rows)))
+    },
+    priority = 10
+  )
+
+  observeEvent(
+    input$stop_record,
+    {
+      open <- recording()
+      req(open)
+      session$sendCustomMessage("record_stop", list())
+      last_recording(stop_recording(open))
+      recording(NULL)
+    },
+    priority = -10
+  )
+
+  # A tab killed mid-ride leaves the connections open in a process that outlives
+  # it. Everything written is already on disk — record_samples() flushes each
+  # batch — so this closes the handles rather than saving anything.
+  session$onSessionEnded(function() {
+    open <- isolate(recording())
+    if (!is.null(open)) {
+      stop_recording(open)
+    }
+  })
+
+  output$record_status <- renderUI({
+    if (!is.null(record_error())) {
+      return(div(class = "alert alert-danger", record_error()))
+    }
+
+    open <- recording()
+    if (!is.null(open)) {
+      states <- meter_states()
+      adrift <- names(states)[
+        !vapply(
+          states,
+          identical,
+          logical(1),
+          "connected"
+        )
+      ]
+      paired <- vapply(meters(), function(m) as.character(m$slot), character(1))
+      adrift <- intersect(adrift, paired)
+
+      return(tagList(
+        div(
+          class = "alert alert-success py-2",
+          strong("Recording. "),
+          sprintf(
+            "%s written to %s.",
+            paste(
+              sprintf("%s: %s rows", open$sources, open$rows),
+              collapse = ", "
+            ),
+            open$dir
+          )
+        ),
+        if (length(adrift) > 0) {
+          div(
+            class = "alert alert-warning py-2 mb-0",
+            strong("A meter has gone. "),
+            "Its file will have a gap over the seconds it missed, which is ",
+            "what it should have: those seconds are absent from the ",
+            "comparison rather than counted as two meters agreeing on zero."
+          )
+        }
+      ))
+    }
+
+    done <- last_recording()
+    if (is.null(done)) {
+      return(NULL)
+    }
+
+    div(
+      class = "alert alert-success py-2 mb-0",
+      sprintf(
+        "Recorded %s. ",
+        paste(
+          sprintf("%s (%s rows)", basename(done$path), done$rows),
+          collapse = ", "
+        )
+      ),
+      actionLink("record_to_rides", "Load these rides")
+    )
+  })
+
+  observeEvent(input$record_to_rides, {
+    dir <- dirname(last_recording()$path[[1]])
+    updateTextInput(session, "dir", value = dir)
+    rescan(dir)
+    bslib::nav_select("nav", "Rides")
+  })
 
   # ---- Settings ----------------------------------------------------------
 

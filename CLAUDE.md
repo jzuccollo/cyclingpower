@@ -24,7 +24,7 @@ Tests run with the working directory at `tests/testthat/`, but fixtures live in 
 
 A five-layer pipeline. Each layer's output is the next layer's input, and the layers are independently testable.
 
-**Ingest** (`read_file.R`, `read_gpx.R`, `schema.R`, `read_rides.R`) — `read_file()` dispatches on extension and both paths funnel through `canonicalise()`, which renames format-specific aliases and enforces one schema: `time` (POSIXct, UTC) and `power` mandatory, plus optional `cadence`, `heart_rate`, `speed`, `distance`, `altitude`, `temperature`, `lat`, `lon`. **If you add a channel or a reader, add it to `canonical_columns()`/`column_aliases()` rather than special-casing downstream** — the FIT and GPX paths previously drifted into emitting `timestamp` and `time` respectively, which is what the schema layer exists to prevent.
+**Ingest** (`read_file.R`, `read_gpx.R`, `read_csv.R`, `schema.R`, `read_rides.R`) — `read_file()` dispatches on extension and both paths funnel through `canonicalise()`, which renames format-specific aliases and enforces one schema: `time` (POSIXct, UTC) and `power` mandatory, plus optional `cadence`, `heart_rate`, `speed`, `distance`, `altitude`, `temperature`, `lat`, `lon`. **If you add a channel or a reader, add it to `canonical_columns()`/`column_aliases()` rather than special-casing downstream** — the FIT and GPX paths previously drifted into emitting `timestamp` and `time` respectively, which is what the schema layer exists to prevent.
 
 `read_gpx.R` matches on XPath `local-name()` rather than namespace prefixes, so it finds power whether written as Strava's bare `<power>` or Garmin's `gpxpx:PowerInWatts`. A file with no power channel is an error, not an `NA` column.
 
@@ -47,6 +47,17 @@ All intervals come from `block_bootstrap_draws()` (moving block, default 60 s). 
 `compare_all_sources()` reports a pair from its own seconds wherever it has any, and only routes through the bridge when it has none — so `basis` says what was actually computed rather than labelling a bridge-routed number `direct`. Chained pairs subtract two independently bootstrapped runs, so their intervals are necessarily wider than the direct ones they are built from. The `basis` column is load-bearing: chained comparisons rest on the bridge reading identically on both days, which the data cannot test. `chain_report()$assumption` says so explicitly — keep that in any output.
 
 **Visualise and report** (`comparison_charts.r`, `report.R`, `inst/rmarkdown/comparison.Rmd`) — plot functions take the thing they visualise: `plot_timeseries()`/`plot_agreement()` take aligned rides, `plot_by_level()` takes `agreement_by_level()` output, `plot_chain()` takes `chain_sources()` output. `compare_report()` renders the parameterised Rmd.
+
+## Recording
+
+The app can also be the recorder, reading BLE power meters over Web Bluetooth (`inst/shiny/www/record.js`, `inst/shiny/www/power-packet.js`, `R/record.R`). It sits *before* Ingest and hands over through the filesystem and nothing else: the recorder writes `<run>_<source>.csv`, the Rides tab scans the directory. There is no shared reactive and no data frame passed between the two halves — analysis is repeatable and recording is not, so the boundary keeps a bug in one from costing a ride in the other. Keep it that way.
+
+- **One clock stamps every meter.** The page stamps each sample on arrival with `toISOString()`; nothing the meter reports about time is used and R never re-stamps. That is the whole point — the offset comes out zero *by construction* rather than recovered by cross-correlation. Sub-second stamps must survive to the file, because `resample_1hz()` rounds them onto its grid and averages duplicates, which is how a 4 Hz meter is handled.
+- **Never pad a gap with zeros.** `record_samples()` writes a row only when a sample arrives. Zeros would read as coasting, and coasting is dropped as a second both meters agreed on, so a dropped connection would enter the comparison as evidence of agreement. Nothing downstream can tell the two apart.
+- **Samples are batched (500 ms) and flushed to disk per batch.** The batching is not an optimisation: Shiny collapses repeat sets of the same input name within a tick, so one `setInputValue` per sample silently loses samples from a 4 Hz meter. The flush is what makes a killed tab cost the last batch rather than the ride.
+- **Stopping is ordered.** A capture-phase click listener in `record.js` queues the final batch before Shiny sends the button press, and the `input$samples` observer has `priority = 10` against the stop observer's `-10`. Without both, the last half-second arrives after the files are closed.
+- `requestDevice()` needs a user gesture, so the Pair button is handled in JS, never through an observer in R. Custom message handlers must declare exactly one argument — Shiny checks arity and throws, and thrown inside `shiny:connected` that aborts the socket handler so the session renders nothing at all, with no R-side error to find.
+- The parser lives in `power-packet.js` with no browser globals in it precisely so `test-record.R` can run it under V8 (Suggests). The radio path has no automated test and cannot have one; `test-record.R` says so at the top and the vignette repeats it. Do not quietly add a mock that looks like coverage.
 
 ## Conventions
 
