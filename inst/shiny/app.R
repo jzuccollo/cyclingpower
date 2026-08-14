@@ -28,11 +28,77 @@ details <- function(title, ...) {
 #' is what you check afterwards.
 full_table <- function(...) details("The numbers in full", ...)
 
+#' comparison_protocol() is one row per interval, which a workout file needs and
+#' a rider does not: twenty-nine rows to read as seven blocks. These collapse
+#' consecutive rows back into the blocks they came from.
+duration_label <- function(seconds) {
+  each <- function(x) {
+    if (x %% 60 == 0) paste0(x / 60, " min") else paste0(x, " s")
+  }
+  distinct <- unique(seconds)
+  repeats <- length(seconds) / length(distinct)
+  parts <- paste(vapply(distinct, each, character(1)), collapse = " / ")
+  if (repeats == 1) {
+    parts
+  } else if (length(distinct) == 1) {
+    paste0(repeats, " × ", parts)
+  } else {
+    paste0(repeats, " × (", parts, ")")
+  }
+}
+
+target_label <- function(mode, target_pc, ftp) {
+  watts <- round(ftp * target_pc)
+  if (all(target_pc == 0)) {
+    "Coasting"
+  } else if (all(mode == "erg")) {
+    paste(paste0(watts, " W"), collapse = " → ")
+  } else {
+    paste0("About ", max(watts), " W, coasting between")
+  }
+}
+
+collapse_protocol <- function(protocol, ftp) {
+  runs <- rle(protocol$block)
+  blocks <- split(protocol, rep(seq_along(runs$lengths), runs$lengths))
+
+  out <- do.call(
+    rbind,
+    lapply(blocks, function(rows) {
+      data.frame(
+        Block = rows$block[1],
+        Duration = duration_label(rows$seconds),
+        Mode = if (all(rows$mode == "erg")) "Erg" else "Level or slope",
+        Target = target_label(rows$mode, rows$target_pc, ftp),
+        Why = rows$why[1]
+      )
+    })
+  )
+
+  rbind(
+    out,
+    data.frame(
+      Block = "Total",
+      Duration = paste0(round(sum(protocol$seconds) / 60), " min"),
+      Mode = "",
+      Target = "",
+      Why = "Ride it identically every time, so a chained comparison can rest on the bridge meter reading the same in both runs"
+    )
+  )
+}
+
 #' A heading inside the sidebar. Nested accordions were the alternative and
 #' 280px is too narrow for them — and the reason these controls were moved in
 #' from the tabs was to make them visible, which a closed accordion undoes.
-sidebar_heading <- function(text) {
-  div(class = "sidebar-heading", text)
+#'
+#' `affects` names the tab the block below governs. A knob in a sidebar is a
+#' knob with no visible consequence: the section it sits in has to say what
+#' moving it will change, or the honest question is what any of this is for.
+sidebar_heading <- function(text, affects = NULL) {
+  tagList(
+    div(class = "sidebar-heading", text),
+    if (!is.null(affects)) div(class = "sidebar-note", affects)
+  )
 }
 
 #' The interface is deliberately quiet. Every saturated colour in this app is
@@ -159,6 +225,45 @@ app_theme <- bslib::bs_theme(
       border-bottom: 1px solid #e7e5e4;
     }
     .sidebar .form-label { margin-bottom: 0.15rem; }
+    .sidebar-note {
+      font-size: 0.82rem;
+      line-height: 1.5;
+      color: #78716c;
+      margin-bottom: 0.75rem;
+    }
+    /* One width for every button in the sidebar. Three buttons at three
+       content widths read as three levels of importance. */
+    .sidebar .btn { width: 100%; }
+
+    /* A row of actions. The buttons in it were previously sized by their own
+       labels, so Scan came out half the width of Load rides and the row read
+       as a hierarchy that was not intended. */
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      align-items: center;
+    }
+    .actions .btn { min-width: 11rem; }
+    /* shinyDirButton and input_task_button both emit a bare button, so the
+       form-group margin that lines up textInput has to be added by hand. */
+    .actions-inline .btn { margin-bottom: 1rem; }
+
+    /* Steps are numbered in the header, and the number carries the ordering
+       rather than the prose having to. */
+    .step-number {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 1.5rem;
+      height: 1.5rem;
+      border-radius: 50%;
+      background: #3c5a6e;
+      color: #ffffff;
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin-right: 0.5rem;
+    }
 
     /* Results tables: the numbers are the point, so give them a monospace
        figure and stop the header shouting over them. */
@@ -183,6 +288,15 @@ app_theme <- bslib::bs_theme(
     table.shiny-table th, table.shiny-table td { padding-inline: 0.7rem; }
     table.shiny-table th:first-child, table.shiny-table td:first-child {
       padding-left: 0;
+    }
+
+    /* The protocol is the exception those rules are written against: its last
+       column is a sentence, not a number, and nowrap pushes it off the card. */
+    #protocol_table table.shiny-table { width: 100%; }
+    #protocol_table table.shiny-table td { white-space: normal; }
+    #protocol_table table.shiny-table tbody tr:last-child {
+      font-style: italic;
+      color: #57534e;
     }
 
     /* An estimate and its interval share a cell, and the strings are padded to
@@ -315,8 +429,18 @@ ui <- bslib::page_navbar(
   # every result on every other tab.
   sidebar = bslib::sidebar(
     width = 280,
+    title = "Analysis settings",
 
-    sidebar_heading("Comparison"),
+    div(
+      class = "sidebar-note",
+      "One set of knobs for the whole app: every number on Alignment, ",
+      "Agreement and By level, and everything in the saved report, is ",
+      "computed with these. Nothing here changes what is recorded or which ",
+      "files are loaded. The defaults are the right starting point — reach ",
+      "for them to test whether a conclusion survives a different choice."
+    ),
+
+    sidebar_heading("Comparison", "Agreement, By level and the report."),
     sliderInput("min_power", "Minimum power (W)", 0, 400, 0, step = 5),
     helpText(
       "Seconds where either meter reads below this are dropped. Coasting is ",
@@ -338,12 +462,15 @@ ui <- bslib::page_navbar(
     ),
 
     hr(),
-    sidebar_heading("Alignment"),
+    sidebar_heading(
+      "Alignment",
+      "The Alignment tab. The offsets found there carry into every later number."
+    ),
     sliderInput("max_offset", "Largest offset to consider (s)", 0, 120, 30, 5),
     sliderInput("smooth", "Trace smoothing (s)", 1, 120, 30, 1),
 
     hr(),
-    sidebar_heading("Power bands"),
+    sidebar_heading("Power bands", "The By level tab."),
     sliderInput("width", "Band width (W)", 10, 100, 25, 5),
     sliderInput("min_seconds", "Minimum seconds per band", 0, 300, 30, 10)
   ),
@@ -374,12 +501,15 @@ ui <- bslib::page_navbar(
           strong("A meter can hold one Bluetooth connection at a time. "),
           "While this page has the trainer, Zwift and TrainerRoad cannot: ",
           "pair the training app to it over ANT+ instead. That is also how erg ",
-          "targets have to be commanded during a recording."
+          "targets have to be commanded during a recording. Check the pairing ",
+          "rather than assume it — a head unit will often take a trainer over ",
+          "Bluetooth by default and quietly spend the connection this page ",
+          "needs."
         ),
         # Wrapped, because a card body is a flex column and a bare button in
         # one stretches the full width of the card.
         div(
-          class = "d-flex mb-3",
+          class = "actions mb-3",
           actionButton("pair_meter", "Pair a meter", class = "btn-primary")
         ),
         # Painted by record.js from the connection state it already holds.
@@ -399,19 +529,17 @@ ui <- bslib::page_navbar(
           "comparison rests on it, and it cannot be done afterwards."
         ),
         div(
-          class = "d-flex gap-2 align-items-end flex-wrap",
+          class = "d-flex gap-2 align-items-end flex-wrap actions-inline",
           div(
             class = "flex-grow-1",
             style = "min-width: 240px;",
-            textInput("record_dir", "Directory", width = "100%")
+            textInput("record_dir", "Folder", width = "100%")
           ),
-          div(
-            class = "mb-3",
-            shinyFiles::shinyDirButton(
-              "record_dir_choose",
-              "Browse…",
-              "Choose a directory to record into"
-            )
+          shinyFiles::shinyDirButton(
+            "record_dir_choose",
+            "Browse…",
+            "Choose a directory to record into",
+            buttonType = "outline-secondary"
           ),
           textInput("record_run", "Run", value = "run1", width = "140px")
         ),
@@ -422,7 +550,7 @@ ui <- bslib::page_navbar(
           "digits and hyphens only. An existing file is never written over."
         ),
         div(
-          class = "d-flex gap-2 align-items-center flex-wrap mb-3",
+          class = "actions mb-3",
           actionButton(
             "start_record",
             "Start recording",
@@ -443,38 +571,102 @@ ui <- bslib::page_navbar(
         tags$canvas(id = "record_trace")
       ),
 
-      details(
-        "What to ride",
-        p(
-          "One clock stamping every meter makes the offset zero by ",
-          "construction, so the surges that ",
-          tags$code("vignette(\"recording_rides\")"),
-          " asks for are no longer there to find it. Erg mode becomes the ",
-          "best ride rather than the worst, because it puts a chosen number ",
-          "of seconds into a chosen band."
+      bslib::card(
+        bslib::card_header("What to ride"),
+        guidance(
+          "Every block here earns its place from something the analysis needs, ",
+          "and the session is the same every time because a chained ",
+          "comparison rests on the bridge meter reading the same in both runs."
         ),
-        p(
-          tags$b("Keep a short sync block anyway. "),
-          "With no feature to lock onto, ",
-          tags$code("check_alignment()"),
-          " cannot tell that the clocks agree from that the traces cannot be ",
-          "compared at all: it collapses both into ",
-          tags$code("unresolved"),
-          ", forces the offset to zero and warns. A recorder that stamped ",
-          "every meter wrongly would pass that check exactly as a correct one ",
-          "does. Four surges of eight seconds, each after thirty seconds of ",
-          "coasting, are what make a resolved zero evidence rather than a ",
-          "default."
+        tableOutput("protocol_table"),
+        div(
+          class = "d-flex gap-2 align-items-end flex-wrap actions-inline mb-3",
+          numericInput(
+            "ftp",
+            "FTP (W)",
+            value = 250,
+            min = 60,
+            max = 600,
+            step = 5,
+            width = "120px"
+          ),
+          selectInput(
+            "step_minutes",
+            "Minutes per step",
+            choices = c(2, 3, 4),
+            selected = 2,
+            width = "150px"
+          ),
+          selectInput(
+            "workout_format",
+            "Workout file",
+            choices = c(
+              "Zwift (.zwo)" = "zwo",
+              "Golden Cheetah, TrainerDay (.erg)" = "erg"
+            ),
+            width = "260px"
+          ),
+          div(
+            class = "mb-3",
+            downloadButton(
+              "download_workout",
+              "Download",
+              class = "btn-primary"
+            )
+          )
         ),
-        p(
-          tags$b("Then a ladder, up and then down. "),
-          "55, 70, 85, 100 and 110% of FTP, four minutes each, in erg, and ",
-          "then the same targets in reverse. A meter reading high because it ",
-          "has warmed up gives different numbers at the same target on the ",
-          "way down; a genuinely level-dependent one repeats itself. Ridden ",
-          "in one direction only the two are indistinguishable. Do not surge ",
-          "in erg — the trainer rounds off the edge the sync block exists to ",
-          "provide."
+        helpText(
+          "A ",
+          tags$code(".zwo"),
+          " writes the surges and coasts as free ride, which drops the trainer ",
+          "out of erg for exactly the blocks that must not be ridden in it. An ",
+          tags$code(".erg"),
+          " course has no way to say that, so switch out of erg by hand for ",
+          "them. Either way the targets have to be commanded over ANT+: this ",
+          "page holds the trainer's Bluetooth."
+        ),
+        details(
+          "Why these blocks",
+          p(
+            tags$b("The surges are not there to find the offset. "),
+            "One clock stamping every meter makes it zero by construction. ",
+            "But with no feature to lock onto, ",
+            tags$code("check_alignment()"),
+            " cannot tell that the clocks agree from that the traces cannot ",
+            "be compared at all: it collapses both into ",
+            tags$code("unresolved"),
+            ", forces the offset to zero and warns. A recorder that stamped ",
+            "every meter wrongly would pass that check exactly as a correct ",
+            "one does. The surges are what make a resolved zero evidence ",
+            "rather than a default."
+          ),
+          p(
+            tags$b("The ladder runs up and then down deliberately. "),
+            "A meter reading high because it has warmed up gives different ",
+            "numbers at the same target on the way down; a genuinely ",
+            "level-dependent one repeats itself. Ridden in one direction only ",
+            "the two are indistinguishable, and ",
+            tags$code("level_dependence()"),
+            " would report the drift as an error that depends on power."
+          ),
+          p(
+            tags$b("Two minutes a step is a floor. "),
+            "What runs out is not seconds but bootstrap blocks. Up and down ",
+            "land in the same bands, so a band carries about twice the step, ",
+            "and at a 60-second block two-minute steps leave it roughly four ",
+            "blocks to resample. Shorter drops under three, and a bootstrap ",
+            "drawing two blocks is not estimating anything. Going the other ",
+            "way to four minutes buys about 17% narrower bands for twice the ",
+            "ladder."
+          ),
+          p(
+            tags$b("Erg makes the trainer the controlled variable, "),
+            "holding its own reading at target, so within a step the trainer ",
+            "is nearly flat and almost all the spread comes from the other ",
+            "meter. That biases nothing — the level is the mean of the two — ",
+            "but the trainer decides which band a second lands in. Worth ",
+            "knowing before reading the By level tab from an erg session."
+          )
         )
       )
     )
@@ -482,84 +674,128 @@ ui <- bslib::page_navbar(
 
   bslib::nav_panel(
     "Rides",
+    # Two steps, numbered, and the second one holds the button that does the
+    # work. Listing a folder and reading the files off disk are separate acts —
+    # the whole reason they are separate is that you correct the labels in
+    # between — but three same-sized buttons in one row said nothing about
+    # which came first or which of them touched the files.
     bslib::card(
-      bslib::card_header("Find the files"),
+      bslib::card_header(span(class = "step-number", "1"), "Choose a folder"),
       guidance(
         "The unit of analysis is a run: one session, ridden once, recorded by ",
         "two or more meters. Files named ",
         tags$code("<run><sep><source>"),
-        " fill the table in automatically — ",
+        " label themselves — ",
         tags$code("run1_kickr.fit"),
         " is the kickr's recording of run one. Anything else you label by ",
-        "hand: the run and source cells are editable."
+        "hand at step 2."
       ),
-      # Where the files are on one line, what to do about them on the next.
-      # Mixing inputs and buttons in a single wrapping row put the buttons on
-      # a baseline of their own and orphaned the last one.
       div(
-        class = "d-flex gap-2 align-items-end flex-wrap",
+        class = "d-flex gap-2 align-items-end flex-wrap actions-inline",
         div(
           class = "flex-grow-1",
           style = "min-width: 240px;",
-          textInput("dir", "Directory", width = "100%")
+          textInput("dir", "Folder", width = "100%")
         ),
-        div(
-          class = "mb-3",
-          shinyFiles::shinyDirButton(
-            "dir_choose",
-            "Browse…",
-            "Choose a directory of ride files"
-          )
+        shinyFiles::shinyDirButton(
+          "dir_choose",
+          "Browse…",
+          "Choose a directory of ride files",
+          buttonType = "outline-secondary"
         ),
-        textInput("sep", "Separator", value = "_", width = "90px")
-      ),
-      div(
-        class = "d-flex gap-2 align-items-center flex-wrap mb-3",
-        actionButton("scan", "Scan", class = "btn-outline-secondary mb-0"),
-        bslib::input_task_button(
-          "load",
-          "Load rides",
-          label_busy = "Reading files…"
-        ),
-        span(class = "flex-grow-1"),
-        bslib::input_task_button(
-          "demo",
-          "Load demo rides",
-          label_busy = "Building demo…",
-          type = "outline-secondary"
-        )
+        actionButton("scan", "List the files", class = "btn-outline-secondary")
       ),
       helpText(
-        "Scanning again replaces the table, discarding any edits. Scan and ",
-        "Load are separate so you can correct the labels in between, which is ",
-        "what the editable table is for."
+        "Browsing lists the folder straight away; typing a path needs the ",
+        "button. Listing only reads the filenames — nothing is opened until ",
+        "step 2."
       ),
       uiOutput("scan_status"),
-      uiOutput("load_status")
+      div(
+        class = "mt-3 pt-3 border-top",
+        p(
+          class = "small text-body-secondary mb-2",
+          "No rides of your own to hand? The demo builds three simulated ",
+          "meters with known faults and loads them in one press."
+        ),
+        div(
+          class = "actions",
+          bslib::input_task_button(
+            "demo",
+            "Load demo rides",
+            label_busy = "Building demo…",
+            type = "outline-secondary"
+          )
+        )
+      )
     ),
     bslib::card(
-      bslib::card_header("Runs and sources"),
+      bslib::card_header(
+        span(class = "step-number", "2"),
+        "Check the labels, then load"
+      ),
       guidance(
-        "Two files must never carry the same run and source. They would be ",
-        "averaged into a single meter with nothing in the output to say it ",
-        "had happened, so that combination is refused rather than warned ",
-        "about."
+        "These are the files found in the folder, not yet the data: nothing ",
+        "has been read from disk. Correct anything mislabelled, drop what ",
+        "does not belong, and load. Two files must never carry the same run ",
+        "and source — they would be averaged into a single meter with nothing ",
+        "in the output to say it had happened, so that combination is refused ",
+        "rather than warned about."
       ),
       uiOutput("demo_note"),
       uiOutput("spec_issues"),
-      p(
-        class = "small text-body-secondary mb-2",
-        "Double-click a run or source cell to edit it. Select rows and use ",
-        "Remove to leave a file out of the comparison entirely."
-      ),
-      DT::DTOutput("spec"),
-      div(
-        class = "mt-2",
-        actionButton(
-          "remove_rows",
-          "Remove selected",
-          class = "btn-sm btn-outline-secondary"
-        )
+      # Hidden until step 1 has listed something. An empty DT still reserves
+      # several hundred pixels for a table it has no rows for, and a Load
+      # button under it reads as an action that has been tried and failed
+      # rather than one waiting on the step above.
+      conditionalPanel(
+        condition = "output.has_spec === true",
+
+        # The separator sits with the table it fills rather than beside the
+        # folder box: it is the character that splits a filename into run and
+        # source, so its consequence is two columns below it, and changing it
+        # re-parses the names on the spot.
+        div(
+          class = "d-flex gap-3 align-items-end flex-wrap",
+          div(
+            style = "width: 110px;",
+            textInput("sep", "Separator", value = "_", width = "100%")
+          ),
+          p(
+            class = "small text-body-secondary mb-3",
+            style = "max-width: 52ch;",
+            "The character between run and source in the filenames: the ",
+            tags$code("_"),
+            " of ",
+            tags$code("run1_kickr.fit"),
+            ". Change it and the two columns are read again."
+          )
+        ),
+        p(
+          class = "small text-body-secondary mb-2",
+          style = "max-width: 68ch;",
+          "Double-click a run or source cell to edit it. Select rows and use ",
+          "Remove selected to leave a file out of the comparison entirely. ",
+          "Listing the folder again replaces the table, discarding these edits."
+        ),
+        DT::DTOutput("spec"),
+        div(
+          class = "actions mt-3",
+          actionButton(
+            "remove_rows",
+            "Remove selected",
+            class = "btn-outline-secondary"
+          )
+        ),
+        div(
+          class = "actions mt-3 pt-3 border-top",
+          bslib::input_task_button(
+            "load",
+            "Load these rides",
+            label_busy = "Reading files…"
+          )
+        ),
+        div(class = "mt-3", uiOutput("load_status"))
       )
     )
   ),
@@ -980,7 +1216,22 @@ server <- function(input, output, session) {
     list(blocking = blocking, warnings = warnings)
   })
 
+  # suspendWhenHidden = FALSE, or the flag the conditionalPanel reads is never
+  # sent while the panel it controls is hidden, and step 2 never opens.
+  output$has_spec <- reactive(!is.null(table_spec()))
+  outputOptions(output, "has_spec", suspendWhenHidden = FALSE)
+
+  # An empty card with a Load button in it looks like a step that has been
+  # skipped rather than one that is waiting on the step above. Rendered from
+  # the same output as the issues rather than its own: a card body is a flex
+  # column with a gap, so an empty uiOutput still costs a row of white.
   output$spec_issues <- renderUI({
+    if (is.null(table_spec())) {
+      return(div(
+        class = "alert alert-secondary",
+        "Nothing listed yet. Choose a folder at step 1, or load the demo rides."
+      ))
+    }
     checks <- spec_checks()
     tagList(
       lapply(checks$blocking, function(m) div(class = "alert alert-danger", m)),
@@ -1058,6 +1309,33 @@ server <- function(input, output, session) {
       updateTextInput(session, "record_dir", value = as.character(chosen))
     }
   })
+
+  # The protocol is data, so the table on the tab and the file you ride cannot
+  # drift apart: both come from comparison_protocol().
+  protocol <- reactive({
+    comparison_protocol(step_seconds = as.numeric(input$step_minutes) * 60)
+  })
+
+  output$protocol_table <- renderTable(
+    {
+      collapse_protocol(protocol(), ftp = input$ftp)
+    },
+    striped = TRUE,
+    width = "100%"
+  )
+
+  output$download_workout <- downloadHandler(
+    filename = function() {
+      paste0("cyclingpower-comparison.", input$workout_format)
+    },
+    content = function(file) {
+      # The handler is handed a path with no extension of its own, so the
+      # format has to be chosen before write_workout() sees it.
+      built <- tempfile(fileext = paste0(".", input$workout_format))
+      write_workout(built, ftp = input$ftp, protocol = protocol())
+      file.copy(built, file, overwrite = TRUE)
+    }
+  )
 
   # What the page reported it could do, rendered only once it has said so. Until
   # then there is nothing honest to show.
