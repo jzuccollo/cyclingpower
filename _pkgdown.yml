@@ -1,0 +1,62 @@
+url: https://jzuccollo.github.io/cyclingpower/
+template:
+  bootstrap: 5
+reference:
+- title: Reading rides
+  desc: |
+    Get files onto one schema. Every reader returns the same shape whatever the container format.
+  contents:
+  - read_file
+  - read_rides
+  - ride_spec_from_names
+  - demo_rides
+- title: Aligning
+  desc: |
+    Put the sources on a common one-second clock. Everything downstream assumes this has happened.
+  contents:
+  - align_rides
+  - alignment_report
+- title: Comparing
+  desc: |
+    How far apart two meters read, overall and across the power range. All intervals come from a moving-block bootstrap.
+  contents:
+  - power_agreement
+  - agreement_by_level
+  - level_dependence
+  - cyclingpower_print
+- title: Chaining
+  desc: |
+    Meters that never rode together, linked through one that rode with both.
+  contents:
+  - chain_sources
+  - chain_by_level
+  - bridge_candidates
+- title: Charts and reports
+  contents:
+  - plot_timeseries
+  - plot_agreement
+  - plot_by_level
+  - plot_chain
+  - compare_report
+  - launch_app
+- title: Recording a comparison
+  desc: |
+    The session to ride, as data rather than prose, and as a file a trainer app can follow.
+  contents:
+  - comparison_protocol
+  - collapse_protocol
+  - write_workout
+- title: Ride metrics
+  desc: The Coggan definitions, and a simulator that hits a chosen NP and AP.
+  contents:
+  - has_concept("metrics")
+  - simulate_power
+articles:
+- title: Get started
+  navbar: ~
+  contents: cyclingpower
+- title: Going further
+  contents:
+  - recording_rides
+  - simulate_power
+
