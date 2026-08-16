@@ -18,7 +18,7 @@ devtools::check()           # full R CMD check
 
 Tests run with the working directory at `tests/testthat/`, but fixtures live in `inst/extdata` and are reached via `system.file("extdata", ..., package = "cyclingpower")` — see `fixture_ride()` in `tests/testthat/helper-synthetic.R`.
 
-`FITfileR` is GitHub-only (`remotes::install_github("grimbough/FITfileR")`) and sits in `Suggests` with a `Remotes:` entry. Anything touching a FIT file fails without it; the `compare_pms` vignette guards on it with `knitr::opts_chunk$set(eval = has_fit)`.
+`FITfileR` is GitHub-only (`remotes::install_github("grimbough/FITfileR")`) and sits in `Suggests` with a `Remotes:` entry. Anything touching a FIT file needs it, but nothing else does: `fixture_ride()` skips without it, `vignette("cyclingpower")` and every example run off `demo_rides()`, which writes CSVs. Keep it that way — documentation that only renders for people who already installed a second package off GitHub is documentation nobody reads.
 
 ## Architecture
 
@@ -50,7 +50,7 @@ All intervals come from `block_bootstrap_draws()` (moving block, default 60 s). 
 
 ## Recording
 
-The app can also be the recorder, reading BLE power meters over Web Bluetooth (`inst/shiny/www/record.js`, `inst/shiny/www/power-packet.js`, `R/record.R`). It sits *before* Ingest and hands over through the filesystem and nothing else: the recorder writes `<run>_<source>.csv`, the Rides tab scans the directory. There is no shared reactive and no data frame passed between the two halves — analysis is repeatable and recording is not, so the boundary keeps a bug in one from costing a ride in the other. Keep it that way.
+The app can also be the recorder, reading BLE power meters over Web Bluetooth (`inst/shiny/www/record.js`, `inst/shiny/www/power-packet.js`, `R/record.R`, `R/tab-record` material inside `R/app-ui.R`/`R/app-server.R`). It sits *before* Ingest and hands over through the filesystem and nothing else: the recorder writes `<run>_<source>.csv`, the Rides tab scans the directory. There is no shared reactive and no data frame passed between the two halves — analysis is repeatable and recording is not, so the boundary keeps a bug in one from costing a ride in the other. Keep it that way.
 
 - **One clock stamps every meter.** The page stamps each sample on arrival with `toISOString()`; nothing the meter reports about time is used and R never re-stamps. That is the whole point — the offset comes out zero *by construction* rather than recovered by cross-correlation. Sub-second stamps must survive to the file, because `resample_1hz()` rounds them onto its grid and averages duplicates, which is how a 4 Hz meter is handled.
 - **Never pad a gap with zeros.** `record_samples()` writes a row only when a sample arrives. Zeros would read as coasting, and coasting is dropped as a second both meters agreed on, so a dropped connection would enter the comparison as evidence of agreement. Nothing downstream can tell the two apart.
