@@ -33,8 +33,21 @@ launch_app <- function(dir = NULL, ...) {
     )
   }
 
+  # The app is built from functions in this package rather than run from a
+  # directory, so nothing serves inst/shiny/www automatically any more. Without
+  # this the two scripts 404, the Record tab still renders, and the Pair button
+  # does nothing with no error anywhere to find.
+  shiny::addResourcePath(
+    www_prefix,
+    system.file("shiny", "www", package = "cyclingpower")
+  )
+
   # runApp() takes no arguments of its own, so the starting directory travels
   # as a shiny option rather than through the call.
   shiny::shinyOptions(cyclingpower_dir = dir)
-  shiny::runApp(system.file("shiny", package = "cyclingpower"), ...)
+  shiny::runApp(shiny::shinyApp(app_ui(), app_server), ...)
 }
+
+# The path record.js and power-packet.js are served under. Named once because
+# launch_app() registers it and app_ui() writes it into the script tags.
+www_prefix <- "cyclingpower"
