@@ -4,12 +4,12 @@
 #' row is one interval: how long, whether the trainer should hold the target,
 #' and what the target is as a fraction of FTP.
 #'
-#' Every block earns its place from something the pipeline needs, and the
-#' reasons are in `why`:
+#' Each block exists for something the pipeline needs, and `why` carries the
+#' reason:
 #'
 #' * The **sync surges** are not there to find the offset — when the app records,
 #'   one clock stamps every sample and the offset is zero by construction. They
-#'   are there because [check_alignment()] cannot tell "these clocks agree" from
+#'   are there because [align_rides()] cannot tell "these clocks agree" from
 #'   "these traces cannot be compared at all" and collapses both into
 #'   `unresolved`. Without an edge to lock onto, a recorder that stamped every
 #'   meter wrongly passes exactly as a correct one does.
@@ -27,11 +27,11 @@
 #' There is one sync block, at the front, and deliberately no second one at the
 #' end. A closing block would only detect a clock drifting during the ride, and
 #' when the app records there is one clock stamping every meter — it cannot
-#' drift relative to itself, so the block would cost two and a half minutes to
-#' rule out something that cannot happen. Independent head units are a different
-#' case, where two clocks genuinely can separate; that route is prose in
-#' `vignette("recording_rides")` rather than this function, and it should repeat
-#' the surges at the end.
+#' drift relative to itself, so the block would cost the best part of two
+#' minutes to rule out something that cannot happen. Independent head units are
+#' a different case, where two clocks genuinely can separate; that route is
+#' prose in `vignette("recording_rides")` rather than this function, and it
+#' should repeat the surges at the end.
 #'
 #' @param step_seconds Seconds per ladder step. The binding constraint is not
 #'   `min_seconds` but how many bootstrap blocks each band carries: the up and
@@ -125,6 +125,93 @@ comparison_protocol <- function(step_seconds = 120, surges = 4) {
   )
 }
 
+duration_label <- function(seconds) {
+  each <- function(x) {
+    if (x %% 60 == 0) paste0(x / 60, " min") else paste0(x, " s")
+  }
+  distinct <- unique(seconds)
+  repeats <- length(seconds) / length(distinct)
+  parts <- paste(vapply(distinct, each, character(1)), collapse = " / ")
+  if (repeats == 1) {
+    parts
+  } else if (length(distinct) == 1) {
+    paste0(repeats, " \u00d7 ", parts)
+  } else {
+    paste0(repeats, " \u00d7 (", parts, ")")
+  }
+}
+
+# A block that is entirely coasting has nothing for the trainer to hold, so
+# naming a mode there invites the rider to set one.
+block_mode <- function(mode, target_pc) {
+  if (all(target_pc == 0)) {
+    "\u2014"
+  } else if (all(mode == "erg")) {
+    "Erg"
+  } else {
+    "Level or slope"
+  }
+}
+
+target_label <- function(mode, target_pc, ftp) {
+  watts <- round(ftp * target_pc)
+  if (all(target_pc == 0)) {
+    "Coasting"
+  } else if (all(mode == "erg")) {
+    paste(paste0(watts, " W"), collapse = " \u2192 ")
+  } else {
+    paste0("About ", max(watts), " W, coasting between")
+  }
+}
+
+#' The protocol as blocks to read
+#'
+#' [comparison_protocol()] is one row per interval, which a workout file needs
+#' and a rider does not. This collapses consecutive rows back into the blocks
+#' they came from, so the table on the Record tab and the one in
+#' `vignette("recording_rides")` are both the protocol rather than a
+#' transcription of it that can drift from the workout file.
+#'
+#' @param protocol One row per interval, as [comparison_protocol()] returns.
+#' @param ftp Functional threshold power in watts, which turns the fractional
+#'   targets into the watts the trainer will be asked to hold. The default is
+#'   the package's reference rider; set your own.
+#'
+#' @return A data frame of `Block`, `Duration`, `Mode`, `Target` and `Why`, one
+#'   row per block, with a closing `Total`.
+#'
+#' @examples
+#' collapse_protocol(comparison_protocol(), ftp = 250)
+#' @export
+collapse_protocol <- function(protocol, ftp = 250) {
+  runs <- rle(protocol$block)
+  blocks <- split(protocol, rep(seq_along(runs$lengths), runs$lengths))
+
+  out <- do.call(
+    rbind,
+    lapply(blocks, function(rows) {
+      data.frame(
+        Block = rows$block[1],
+        Duration = duration_label(rows$seconds),
+        Mode = block_mode(rows$mode, rows$target_pc),
+        Target = target_label(rows$mode, rows$target_pc, ftp),
+        Why = rows$why[1]
+      )
+    })
+  )
+
+  rbind(
+    out,
+    data.frame(
+      Block = "Total",
+      Duration = paste0(round(sum(protocol$seconds) / 60), " min"),
+      Mode = "",
+      Target = "",
+      Why = "Ride it identically every time, so a chained comparison can rest on the bridge meter reading the same in both runs"
+    )
+  )
+}
+
 #' Write the protocol as a trainer workout file
 #'
 #' Turns [comparison_protocol()] into something a training app can ride, so the
@@ -145,7 +232,8 @@ comparison_protocol <- function(step_seconds = 120, surges = 4) {
 #'   `.erg`.
 #' @param ftp Functional threshold power in watts. `.zwo` stores targets as
 #'   fractions of the rider's FTP, so this only reaches the description there;
-#'   `.erg` stores absolute watts and cannot be written without it.
+#'   `.erg` stores absolute watts, where a wrong FTP is a wrong workout. The
+#'   default is the package's reference rider; set your own.
 #' @param protocol A protocol from [comparison_protocol()].
 #'
 #' @return `path`, invisibly.
@@ -154,7 +242,7 @@ comparison_protocol <- function(step_seconds = 120, surges = 4) {
 #' path <- tempfile(fileext = ".zwo")
 #' write_workout(path, ftp = 250)
 #' @export
-write_workout <- function(path, ftp, protocol = comparison_protocol()) {
+write_workout <- function(path, ftp = 250, protocol = comparison_protocol()) {
   format <- tolower(tools::file_ext(path))
   switch(
     format,

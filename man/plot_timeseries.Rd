@@ -7,7 +7,7 @@
 plot_timeseries(aligned, smooth = 30)
 }
 \arguments{
-\item{aligned}{Result of [align_rides()].}
+\item{aligned}{Result of \code{\link[=align_rides]{align_rides()}}.}
 
 \item{smooth}{Window of the rolling mean, in seconds.}
 }
@@ -20,7 +20,12 @@ other, and whether they are in step. A rolling mean is drawn over the
 second-by-second trace, which is too noisy to read directly.
 }
 \examples{
-\dontrun{
-read_rides(spec) |> align_rides() |> plot_timeseries()
+read_rides(demo_rides()) |> align_rides() |> plot_timeseries()
 }
+\seealso{
+Other plots:
+\code{\link[=plot_agreement]{plot_agreement()}},
+\code{\link[=plot_by_level]{plot_by_level()}},
+\code{\link[=plot_chain]{plot_chain()}}
 }
+\concept{plots}

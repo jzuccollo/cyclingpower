@@ -42,12 +42,12 @@ parse_gpx_time <- function(x) {
 #' of a dozen transitive dependencies, and which finds power only when it is
 #' written as a bare `<power>` in the default GPX namespace.
 #' @noRd
-read_gpx <- function(file_url) {
-  points <- xml2::read_xml(file_url) |>
+read_gpx <- function(path) {
+  points <- xml2::read_xml(path) |>
     xml2::xml_find_all("//*[local-name()='trkpt']")
 
   if (length(points) == 0) {
-    stop(sprintf("No track points found in %s.", basename(file_url)))
+    stop(sprintf("No track points found in %s.", basename(path)))
   }
 
   extracted <- lapply(gpx_field_names(), function(names) {
@@ -63,5 +63,5 @@ read_gpx <- function(file_url) {
   out <- out[, vapply(out, function(col) !all(is.na(col)), logical(1))]
   out$time <- parse_gpx_time(out$time)
 
-  canonicalise(out, file_url)
+  canonicalise(out, path)
 }

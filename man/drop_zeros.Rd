@@ -4,10 +4,10 @@
 \alias{drop_zeros}
 \title{Drop coasting seconds}
 \usage{
-drop_zeros(power_data)
+drop_zeros(power)
 }
 \arguments{
-\item{power_data}{Numeric vector of per-second power in watts.}
+\item{power}{Numeric vector of per-second power in watts.}
 }
 \value{
 The input with zeros removed.
@@ -16,8 +16,17 @@ The input with zeros removed.
 A utility for the times you want a metric over pedalling only. The metrics
 in this package follow the standard definitions and count coasting, so
 compose this yourself where you want the other behaviour:
-`average_power(drop_zeros(x))`.
+\code{average_power(drop_zeros(x))}.
 }
 \examples{
 drop_zeros(c(200, 0, 220, 0, 210))
 }
+\seealso{
+Other metrics:
+\code{\link[=average_power]{average_power()}},
+\code{\link[=intensity_factor]{intensity_factor()}},
+\code{\link[=normalised_power]{normalised_power()}},
+\code{\link[=tss]{tss()}},
+\code{\link[=variability_index]{variability_index()}}
+}
+\concept{metrics}

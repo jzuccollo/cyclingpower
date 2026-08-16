@@ -4,10 +4,10 @@
 \alias{variability_index}
 \title{Variability index}
 \usage{
-variability_index(power_data)
+variability_index(power)
 }
 \arguments{
-\item{power_data}{Numeric vector of per-second power in watts.}
+\item{power}{Numeric vector of per-second power in watts.}
 }
 \value{
 Variability index, where 1 is a perfectly steady effort.
@@ -19,3 +19,12 @@ time trial sits near 1, a criterium or a hilly group ride well above it.
 \examples{
 variability_index(rep(250, 600))
 }
+\seealso{
+Other metrics:
+\code{\link[=average_power]{average_power()}},
+\code{\link[=drop_zeros]{drop_zeros()}},
+\code{\link[=intensity_factor]{intensity_factor()}},
+\code{\link[=normalised_power]{normalised_power()}},
+\code{\link[=tss]{tss()}}
+}
+\concept{metrics}

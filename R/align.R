@@ -21,11 +21,12 @@
 #'   run), `time` and the ride channels, with an alignment report attached.
 #'   Retrieve the report with [alignment_report()].
 #'
+#' @family alignment
 #' @examples
-#' \dontrun{
-#' aligned <- read_rides(spec) |> align_rides()
+#' aligned <- read_rides(demo_rides()) |> align_rides()
+#'
+#' # The demo plants a seven-second offset on one meter, and it comes back
 #' alignment_report(aligned)
-#' }
 #' @export
 align_rides <- function(rides, max_offset = 30) {
   runs <- split(rides, rides$run)
@@ -161,7 +162,7 @@ best_lag <- function(reference, candidate, max_offset) {
 #' How well the traces must match at the best offset, and how far that peak
 #' must stand above the rest of the surface, for the offset to count as
 #' established. Both are judgement calls rather than tuning parameters: below
-#' these the honest answer is that the data did not settle the question.
+#' these, the data did not settle the question.
 #' @noRd
 MIN_CORRELATION <- 0.5
 MIN_SHARPNESS <- 0.02
@@ -170,8 +171,8 @@ MIN_SHARPNESS <- 0.02
 #' not the same ride, and a steady effort with no features to lock onto. They
 #' cannot be told apart from the correlation alone, and refusing to proceed
 #' would block the steady trainer sessions this package is mostly used on. So
-#' both resolve to one honest state: the offset was not established, the
-#' recorded timestamps stand, and the report carries the numbers that say why.
+#' both resolve to one state: the offset was not established, the recorded
+#' timestamps stand, and the report carries the numbers that say why.
 #' @noRd
 check_alignment <- function(report) {
   estimated <- !is.na(report$correlation)

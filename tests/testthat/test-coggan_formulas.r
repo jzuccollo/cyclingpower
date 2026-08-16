@@ -70,3 +70,14 @@ test_that("Coggan metrics on the reference ride", {
   expect_equal(tss(ride$power, ftp), 58.66, tolerance = 1e-3)
   expect_equal(variability_index(ride$power), 1.1162, tolerance = 1e-3)
 })
+
+test_that("the default FTP is the one the rest of the package assumes", {
+  # 250 W is what the app's input, the protocol examples and the recording
+  # vignette all use. An hour at threshold scores 100 by definition, so this
+  # both pins the default and checks it is wired through intensity_factor().
+  expect_equal(tss(rep(250, 3600)), 100)
+  expect_equal(intensity_factor(rep(250, 600)), 1)
+
+  # And it is only a default.
+  expect_equal(tss(rep(300, 3600), ftp = 300), 100)
+})

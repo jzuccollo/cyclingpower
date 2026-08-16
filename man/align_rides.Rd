@@ -10,17 +10,17 @@ align_rides(rides, max_offset = 30)
 alignment_report(aligned)
 }
 \arguments{
-\item{rides}{Long tibble from [read_rides()].}
+\item{rides}{Long tibble from \code{\link[=read_rides]{read_rides()}}.}
 
-\item{max_offset}{Largest offset to consider, in seconds. Set to `0` to
+\item{max_offset}{Largest offset to consider, in seconds. Set to \code{0} to
 trust the recorded timestamps and skip estimation.}
 
-\item{aligned}{Result of [align_rides()].}
+\item{aligned}{Result of \code{\link[=align_rides]{align_rides()}}.}
 }
 \value{
-A tibble of `run`, `source`, `t` (seconds from the start of the
-  run), `time` and the ride channels, with an alignment report attached.
-  Retrieve the report with [alignment_report()].
+A tibble of \code{run}, \code{source}, \code{t} (seconds from the start of the
+run), \code{time} and the ride channels, with an alignment report attached.
+Retrieve the report with \code{\link[=alignment_report]{alignment_report()}}.
 }
 \description{
 Two meters recording the same ride do not necessarily agree about what time
@@ -34,12 +34,13 @@ Within each run every source is resampled onto a one-second grid, then the
 offset against a reference source is estimated by maximising the
 cross-correlation of the power series. Where both channels came from a
 single head unit the estimate is simply zero, so the same path serves both
-cases. Gaps left by pauses or smart recording stay `NA` rather than being
+cases. Gaps left by pauses or smart recording stay \code{NA} rather than being
 interpolated across.
 }
 \examples{
-\dontrun{
-aligned <- read_rides(spec) |> align_rides()
+aligned <- read_rides(demo_rides()) |> align_rides()
+
+# The demo plants a seven-second offset on one meter, and it comes back
 alignment_report(aligned)
 }
-}
+\concept{alignment}

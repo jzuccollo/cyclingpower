@@ -123,3 +123,18 @@ test_that("ride specs from filenames fail loudly on the wrong shape", {
   # an all-NA source column, leaving every ride labelled identically.
   expect_error(ride_spec_from_names(c("run1.fit", "run2.fit")), "do not split")
 })
+
+test_that("a directory of ride files is read without building a spec", {
+  # What a new user actually has is a folder. The scanner is shared with the
+  # app's Rides tab so the two cannot disagree about what counts as a ride.
+  dir <- demo_rides()
+  rides <- read_rides(dir)
+
+  expect_setequal(unique(rides$run), c("run1", "run2"))
+  expect_setequal(unique(rides$source), c("assioma", "kickr", "quarq"))
+  expect_equal(rides, read_rides(ride_spec_from_names(ride_files(dir))))
+
+  # Files that are not rides are ignored rather than read and failed on.
+  file.create(file.path(dir, "notes.txt"))
+  expect_equal(nrow(read_rides(dir)), nrow(rides))
+})

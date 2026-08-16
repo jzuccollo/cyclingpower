@@ -46,6 +46,7 @@ test_that("rendering writes nothing into the installed package", {
   # knitr writes comparison.knit.md and the figures beside whichever copy of the
   # template it is handed. Handed the installed one, that is a write into the
   # package's own directory, which anyone whose library is read-only cannot do.
+  skip_if_not_installed("rmarkdown")
   skip_if_not(rmarkdown::pandoc_available())
 
   ride <- fixture_ride()[1:600, ]

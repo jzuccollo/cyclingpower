@@ -4,10 +4,10 @@
 \alias{normalised_power}
 \title{Normalised power}
 \usage{
-normalised_power(power_data)
+normalised_power(power)
 }
 \arguments{
-\item{power_data}{Numeric vector of per-second power in watts.}
+\item{power}{Numeric vector of per-second power in watts.}
 }
 \value{
 Normalised power in watts.
@@ -21,8 +21,18 @@ physiological cost of a ragged ride better than average power.
 Follows Coggan's definition: the rolling mean runs over the whole recording
 with coasting included and counted as zero, and trails rather than centres,
 so the first value falls at the thirty-second mark. A recording shorter than
-the window has no normalised power and returns `NA`.
+the window has no normalised power and returns \code{NA}. For a value over the
+seconds actually spent pedalling, compose with \code{\link[=drop_zeros]{drop_zeros()}}.
 }
 \examples{
 normalised_power(rep(250, 600))
 }
+\seealso{
+Other metrics:
+\code{\link[=average_power]{average_power()}},
+\code{\link[=drop_zeros]{drop_zeros()}},
+\code{\link[=intensity_factor]{intensity_factor()}},
+\code{\link[=tss]{tss()}},
+\code{\link[=variability_index]{variability_index()}}
+}
+\concept{metrics}

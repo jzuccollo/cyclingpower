@@ -14,7 +14,7 @@ agreement_by_level(
 )
 }
 \arguments{
-\item{aligned}{Result of [align_rides()].}
+\item{aligned}{Result of \code{\link[=align_rides]{align_rides()}}.}
 
 \item{width}{Bin width in watts.}
 
@@ -24,13 +24,24 @@ agreement_by_level(
 
 \item{block}{Bootstrap block length in seconds.}
 
-\item{replicates}{Number of bootstrap replicates.}
+\item{replicates}{Number of bootstrap replicates. Lower than elsewhere in
+the package because every band is resampled separately, so 500 across
+eight bands is already more work than 1000 over the ride as a whole.}
 }
 \value{
-A tibble with one row per bin per source pair per run, holding the
-  band and its `band_range` label, the seconds behind it, and the difference
-  in both watts (`bias_w`) and per cent (`gain_pc`), each with a 95%
-  interval.
+A tibble with one row per bin per source pair per run:
+\describe{
+\item{\code{run}, \code{source_a}, \code{source_b}}{As \code{\link[=power_agreement]{power_agreement()}}.}
+\item{\code{band}, \code{band_range}}{Bin centre in watts, and its label. Seconds
+are binned on the mean of the two meters, never on either one.}
+\item{\code{seconds}, \code{mean_power}}{Paired seconds in the bin, and their mean
+level.}
+\item{\code{bias_w}, \code{bias_lo}, \code{bias_hi}}{Mean difference in watts within
+the bin, with its 95\% bootstrap interval.}
+\item{\code{gain_pc}, \code{gain_lo}, \code{gain_hi}}{The same as a percentage.}
+}
+Seconds dropped for thin bins are carried on the \code{dropped_seconds}
+attribute.
 }
 \description{
 Meters often agree at endurance pace and diverge at threshold or in
@@ -40,12 +51,17 @@ binning on one meter and then plotting its own difference against that bin
 makes measurement noise look like a real trend.
 }
 \details{
-Time is not spread evenly across the power range, so `seconds` is carried
-through on every row. Bins thinner than `min_seconds` are dropped, and how
+Time is not spread evenly across the power range, so \code{seconds} is carried
+through on every row. Bins thinner than \code{min_seconds} are dropped, and how
 many seconds that discarded is reported as an attribute.
 }
 \examples{
-\dontrun{
-read_rides(spec) |> align_rides() |> agreement_by_level()
+aligned <- read_rides(demo_rides()) |> align_rides()
+agreement_by_level(aligned)
 }
+\seealso{
+Other agreement:
+\code{\link[=level_dependence]{level_dependence()}},
+\code{\link[=power_agreement]{power_agreement()}}
 }
+\concept{agreement}

@@ -5,15 +5,16 @@
 #' compose this yourself where you want the other behaviour:
 #' `average_power(drop_zeros(x))`.
 #'
-#' @param power_data Numeric vector of per-second power in watts.
+#' @param power Numeric vector of per-second power in watts.
 #'
 #' @return The input with zeros removed.
 #'
+#' @family metrics
 #' @examples
 #' drop_zeros(c(200, 0, 220, 0, 210))
 #' @export
-drop_zeros <- function(power_data) {
-  power_data[power_data != 0]
+drop_zeros <- function(power) {
+  power[power != 0]
 }
 
 #' Normalised power
@@ -25,20 +26,22 @@ drop_zeros <- function(power_data) {
 #' Follows Coggan's definition: the rolling mean runs over the whole recording
 #' with coasting included and counted as zero, and trails rather than centres,
 #' so the first value falls at the thirty-second mark. A recording shorter than
-#' the window has no normalised power and returns `NA`.
+#' the window has no normalised power and returns `NA`. For a value over the
+#' seconds actually spent pedalling, compose with [drop_zeros()].
 #'
 #' @inheritParams drop_zeros
 #'
 #' @return Normalised power in watts.
 #'
+#' @family metrics
 #' @examples
 #' normalised_power(rep(250, 600))
 #' @export
-normalised_power <- function(power_data) {
-  if (length(power_data) < 30) {
+normalised_power <- function(power) {
+  if (length(power) < 30) {
     return(NA_real_)
   }
-  rolling <- zoo::rollmean(power_data, 30, align = "right")
+  rolling <- zoo::rollmean(power, 30, align = "right")
   mean(rolling^4, na.rm = TRUE)^0.25
 }
 
@@ -53,11 +56,12 @@ normalised_power <- function(power_data) {
 #'
 #' @return Average power in watts.
 #'
+#' @family metrics
 #' @examples
 #' average_power(c(rep(200, 1800), rep(0, 1800)))
 #' @export
-average_power <- function(power_data) {
-  mean(power_data, na.rm = TRUE)
+average_power <- function(power) {
+  mean(power, na.rm = TRUE)
 }
 
 #' Intensity factor
@@ -65,15 +69,18 @@ average_power <- function(power_data) {
 #' Normalised power as a fraction of threshold power.
 #'
 #' @inheritParams drop_zeros
-#' @param ftp Functional threshold power in watts.
+#' @param ftp Functional threshold power in watts. The default is the
+#'   package's reference rider and is almost certainly not you: set your own
+#'   for a number that means anything.
 #'
 #' @return Intensity factor, where 1 is riding at threshold.
 #'
+#' @family metrics
 #' @examples
-#' intensity_factor(rep(210, 600), ftp = 275)
+#' intensity_factor(rep(210, 600), ftp = 250)
 #' @export
-intensity_factor <- function(power_data, ftp) {
-  normalised_power(power_data) / ftp
+intensity_factor <- function(power, ftp = 250) {
+  normalised_power(power) / ftp
 }
 
 #' Training stress score
@@ -86,12 +93,13 @@ intensity_factor <- function(power_data, ftp) {
 #'
 #' @return Training stress score.
 #'
+#' @family metrics
 #' @examples
-#' tss(rep(275, 3600), ftp = 275)
+#' tss(rep(250, 3600), ftp = 250)
 #' @export
-tss <- function(power_data, ftp) {
-  t <- length(power_data)
-  intensity_factor <- intensity_factor(power_data, ftp)
+tss <- function(power, ftp = 250) {
+  t <- length(power)
+  intensity_factor <- intensity_factor(power, ftp)
   (t * intensity_factor^2) / 36
 }
 
@@ -104,9 +112,10 @@ tss <- function(power_data, ftp) {
 #'
 #' @return Variability index, where 1 is a perfectly steady effort.
 #'
+#' @family metrics
 #' @examples
 #' variability_index(rep(250, 600))
 #' @export
-variability_index <- function(power_data) {
-  normalised_power(power_data) / average_power(power_data)
+variability_index <- function(power) {
+  normalised_power(power) / average_power(power)
 }

@@ -76,7 +76,7 @@ plot_timeseries(aligned, smooth = settings$smooth)
 
 `bias_w` is the average difference in watts and `gain_pc` the same thing as a
 percentage, which is usually the more natural way to read a meter's error.
-`loa_lower` and `loa_upper` bound the range within which most individual
+`loa_lo` and `loa_hi` bound the range within which most individual
 seconds fall. Intervals come from a moving-block bootstrap rather than from
 treating each second as independent evidence, which would make a fraction of a
 watt look decisively different from zero.

@@ -8,54 +8,55 @@ comparison_protocol(step_seconds = 120, surges = 4)
 }
 \arguments{
 \item{step_seconds}{Seconds per ladder step. The binding constraint is not
-`min_seconds` but how many bootstrap blocks each band carries: the up and
+\code{min_seconds} but how many bootstrap blocks each band carries: the up and
 down ladders land in the same bands, so a band holds roughly
-`2 * step_seconds`, and the default 120 gives it about four 60-second
+\code{2 * step_seconds}, and the default 120 gives it about four 60-second
 blocks. Going shorter drops under three, and resampling two blocks is not
-an estimate. Lengthening to 240 buys about 17% narrower bands for twice
+an estimate. Lengthening to 240 buys about 17\% narrower bands for twice
 the ladder.}
 
 \item{surges}{Number of coast-to-power edges in the sync block.}
 }
 \value{
-A tibble of `block`, `seconds`, `mode`, `target_pc`, `cue` and
-  `why`, one row per interval, in riding order. `cue` is what the rider is
-  told at the time; `why` is what the block is for.
+A tibble of \code{block}, \code{seconds}, \code{mode}, \code{target_pc}, \code{cue} and
+\code{why}, one row per interval, in riding order. \code{cue} is what the rider is
+told at the time; \code{why} is what the block is for.
 }
 \description{
-The block-by-block protocol from `vignette("recording_rides")`, as data. Each
+The block-by-block protocol from \code{vignette("recording_rides")}, as data. Each
 row is one interval: how long, whether the trainer should hold the target,
 and what the target is as a fraction of FTP.
 }
 \details{
-Every block earns its place from something the pipeline needs, and the
-reasons are in `why`:
+Each block exists for something the pipeline needs, and \code{why} carries the
+reason:
+\itemize{
+\item The \strong{sync surges} are not there to find the offset — when the app records,
+one clock stamps every sample and the offset is zero by construction. They
+are there because \code{\link[=align_rides]{align_rides()}} cannot tell "these clocks agree" from
+"these traces cannot be compared at all" and collapses both into
+\code{unresolved}. Without an edge to lock onto, a recorder that stamped every
+meter wrongly passes exactly as a correct one does.
+\item The \strong{ladder} puts a chosen number of seconds into each band, because
+\code{\link[=agreement_by_level]{agreement_by_level()}} only has a band if you spent time in it.
+\item The ladder \strong{runs up and then back down} because a meter reading high
+through warming up gives different numbers at the same target on the way
+down, where a genuinely level-dependent meter repeats itself. Ridden one
+way only, \code{\link[=level_dependence]{level_dependence()}} cannot separate them.
+}
 
-* The **sync surges** are not there to find the offset — when the app records,
-  one clock stamps every sample and the offset is zero by construction. They
-  are there because [check_alignment()] cannot tell "these clocks agree" from
-  "these traces cannot be compared at all" and collapses both into
-  `unresolved`. Without an edge to lock onto, a recorder that stamped every
-  meter wrongly passes exactly as a correct one does.
-* The **ladder** puts a chosen number of seconds into each band, because
-  [agreement_by_level()] only has a band if you spent time in it.
-* The ladder **runs up and then back down** because a meter reading high
-  through warming up gives different numbers at the same target on the way
-  down, where a genuinely level-dependent meter repeats itself. Ridden one
-  way only, [level_dependence()] cannot separate them.
-
-`mode` is `"erg"` where the trainer holds the target and `"free"` where it
+\code{mode} is \code{"erg"} where the trainer holds the target and \code{"free"} where it
 must not: a trainer in erg fights a surge and rounds off the very edge the
 sync block exists to provide.
 
 There is one sync block, at the front, and deliberately no second one at the
 end. A closing block would only detect a clock drifting during the ride, and
 when the app records there is one clock stamping every meter — it cannot
-drift relative to itself, so the block would cost two and a half minutes to
-rule out something that cannot happen. Independent head units are a different
-case, where two clocks genuinely can separate; that route is prose in
-`vignette("recording_rides")` rather than this function, and it should repeat
-the surges at the end.
+drift relative to itself, so the block would cost the best part of two
+minutes to rule out something that cannot happen. Independent head units are
+a different case, where two clocks genuinely can separate; that route is
+prose in \code{vignette("recording_rides")} rather than this function, and it
+should repeat the surges at the end.
 }
 \examples{
 comparison_protocol()

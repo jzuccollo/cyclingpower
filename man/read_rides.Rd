@@ -7,25 +7,32 @@
 read_rides(spec)
 }
 \arguments{
-\item{spec}{Data frame with columns `path`, `run` and `source`.}
+\item{spec}{Data frame with columns \code{path}, \code{run} and \code{source}, or the path
+to a directory of \code{.fit}, \code{.gpx} or \code{.csv} files named \verb{<run>_<source>}.}
 }
 \value{
-A tibble on the canonical ride schema with `run` and `source`
-  prepended.
+A tibble on the canonical ride schema with \code{run} and \code{source}
+prepended.
 }
 \description{
 The unit of analysis is a run (one session, ridden once) recorded by two or
 more sources (power meters). This assembles that structure explicitly, so
-the `run` and `source` labels come from a spec you can read rather than
+the \code{run} and \code{source} labels come from a spec you can read rather than
 from parsing filenames and hoping.
 }
+\details{
+A directory is accepted as well as a spec, since a folder of files is what
+you usually have. The filenames are then read by \code{\link[=ride_spec_from_names]{ride_spec_from_names()}},
+which needs them to be \verb{<run>_<source>}; build the spec yourself where they
+are not.
+}
 \examples{
-\dontrun{
-spec <- data.frame(
-  path = c("run1_kickr.fit", "run1_4iiii.fit"),
-  run = "run1",
-  source = c("kickr", "4iiii")
-)
-read_rides(spec)
+rides <- read_rides(demo_rides())
+head(rides)
 }
+\seealso{
+Other reading:
+\code{\link[=read_file]{read_file()}},
+\code{\link[=ride_spec_from_names]{ride_spec_from_names()}}
 }
+\concept{reading}

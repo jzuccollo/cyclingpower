@@ -7,7 +7,7 @@
 plot_chain(chained)
 }
 \arguments{
-\item{chained}{Result of [chain_sources()].}
+\item{chained}{Result of \code{\link[=chain_sources]{chain_sources()}}.}
 }
 \value{
 A ggplot object.
@@ -20,7 +20,12 @@ having read the same on both days, so they are drawn distinctly rather than
 presented as equivalent evidence.
 }
 \examples{
-\dontrun{
-read_rides(spec) |> align_rides() |> chain_sources() |> plot_chain()
+read_rides(demo_rides()) |> align_rides() |> chain_sources() |> plot_chain()
 }
+\seealso{
+Other plots:
+\code{\link[=plot_agreement]{plot_agreement()}},
+\code{\link[=plot_by_level]{plot_by_level()}},
+\code{\link[=plot_timeseries]{plot_timeseries()}}
 }
+\concept{plots}

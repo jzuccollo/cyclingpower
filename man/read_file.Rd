@@ -4,21 +4,32 @@
 \alias{read_file}
 \title{Read a ride file}
 \usage{
-read_file(file_url)
+read_file(path)
 }
 \arguments{
-\item{file_url}{Path or URL of a `.fit`, `.gpx` or `.csv` file. A CSV needs a
-`time` column, in ISO 8601 or epoch seconds, and a `power` column.}
+\item{path}{Path or URL of a \code{.fit}, \code{.gpx} or \code{.csv} file. A CSV needs a
+\code{time} column, in ISO 8601 or epoch seconds, and a \code{power} column.}
 }
 \value{
-A tibble with `time` (POSIXct, UTC) and `power` (watts), plus
-  whichever of `cadence`, `heart_rate`, `speed`, `distance`, `altitude`,
-  `temperature`, `lat` and `lon` the file carries, ordered by time.
+A tibble with \code{time} (POSIXct, UTC) and \code{power} (watts), plus
+whichever of \code{cadence}, \code{heart_rate}, \code{speed}, \code{distance}, \code{altitude},
+\code{temperature}, \code{lat} and \code{lon} the file carries, ordered by time.
 }
 \description{
-Reads a `.fit`, `.gpx` or `.csv` file into the canonical ride schema, so
+Reads a \code{.fit}, \code{.gpx} or \code{.csv} file into the canonical ride schema, so
 nothing downstream has to care which format a ride arrived in.
 }
 \examples{
+read_file(system.file("extdata", "power_strava.gpx", package = "cyclingpower"))
+
+# FIT needs FITfileR, which is not on CRAN
+\dontshow{if (requireNamespace("FITfileR", quietly = TRUE)) withAutoprint(\{ # examplesIf}
 read_file(system.file("extdata", "power1.fit", package = "cyclingpower"))
+\dontshow{\}) # examplesIf}
 }
+\seealso{
+Other reading:
+\code{\link[=read_rides]{read_rides()}},
+\code{\link[=ride_spec_from_names]{ride_spec_from_names()}}
+}
+\concept{reading}

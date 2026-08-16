@@ -12,14 +12,20 @@ ride_spec_from_names(files, sep = "_")
 \item{sep}{Separator between run and source in the filename.}
 }
 \value{
-A tibble with `path`, `run` and `source`, ready for `read_rides()`.
+A tibble with \code{path}, \code{run} and \code{source}, ready for \code{read_rides()}.
 }
 \description{
-Assumes files are named `<run><sep><source>`, so `run1_kickr.fit` is the
+Assumes files are named \verb{<run><sep><source>}, so \code{run1_kickr.fit} is the
 kickr's recording of run 1. A filename that does not split into exactly two
-parts is an error rather than a silent `NA`, which is the failure mode that
+parts is an error rather than a silent \code{NA}, which is the failure mode that
 previously left every ride labelled with the same missing source.
 }
 \examples{
 ride_spec_from_names(c("run1_kickr.fit", "run1_4iiii.fit"))
 }
+\seealso{
+Other reading:
+\code{\link[=read_file]{read_file()}},
+\code{\link[=read_rides]{read_rides()}}
+}
+\concept{reading}

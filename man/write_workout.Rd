@@ -4,31 +4,32 @@
 \alias{write_workout}
 \title{Write the protocol as a trainer workout file}
 \usage{
-write_workout(path, ftp, protocol = comparison_protocol())
+write_workout(path, ftp = 250, protocol = comparison_protocol())
 }
 \arguments{
-\item{path}{File to write. The extension chooses the format: `.zwo` or
-`.erg`.}
+\item{path}{File to write. The extension chooses the format: \code{.zwo} or
+\code{.erg}.}
 
-\item{ftp}{Functional threshold power in watts. `.zwo` stores targets as
+\item{ftp}{Functional threshold power in watts. \code{.zwo} stores targets as
 fractions of the rider's FTP, so this only reaches the description there;
-`.erg` stores absolute watts and cannot be written without it.}
+\code{.erg} stores absolute watts, where a wrong FTP is a wrong workout. The
+default is the package's reference rider; set your own.}
 
-\item{protocol}{A protocol from [comparison_protocol()].}
+\item{protocol}{A protocol from \code{\link[=comparison_protocol]{comparison_protocol()}}.}
 }
 \value{
-`path`, invisibly.
+\code{path}, invisibly.
 }
 \description{
-Turns [comparison_protocol()] into something a training app can ride, so the
+Turns \code{\link[=comparison_protocol]{comparison_protocol()}} into something a training app can ride, so the
 session is commanded rather than remembered. The format follows the file
-extension, the way [read_file()] dispatches on it.
+extension, the way \code{\link[=read_file]{read_file()}} dispatches on it.
 }
 \details{
-`.zwo` (Zwift) carries the distinction the protocol depends on: erg steps are
-written as `SteadyState` and the sync surges and coasts as `FreeRide`, which
+\code{.zwo} (Zwift) carries the distinction the protocol depends on: erg steps are
+written as \code{SteadyState} and the sync surges and coasts as \code{FreeRide}, which
 releases erg control for exactly the blocks that must not be ridden in it.
-`.erg` (Golden Cheetah, TrainerDay, PerfPro) has no such concept and is a
+\code{.erg} (Golden Cheetah, TrainerDay, PerfPro) has no such concept and is a
 plain watts-against-time course, so the surge blocks come out as targets the
 trainer will try to hold. Drop out of erg for them by hand.
 

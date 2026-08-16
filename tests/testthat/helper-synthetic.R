@@ -2,7 +2,11 @@
 # helpers build sources with distortions we choose, so a test can assert that
 # the machinery recovers a number we already know.
 
+# FITfileR is not on CRAN, so a clean machine has the rest of the suite but not
+# this. Skipping beats erroring: the tests that need a real ride say so, and
+# everything built on demo_rides() still runs.
 fixture_ride <- function() {
+  testthat::skip_if_not_installed("FITfileR")
   read_file(system.file("extdata", "power1.fit", package = "cyclingpower"))
 }
 

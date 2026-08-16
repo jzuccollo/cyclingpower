@@ -16,7 +16,7 @@
 #' @param sources Character vector of meter labels, one file each.
 #'
 #' @return An object of class `power_recording`, to pass to
-#'   [record_samples()] and then [stop_recording()].
+#'   `record_samples()` and then `stop_recording()`.
 #'
 #' @examples
 #' dir <- tempfile()
@@ -30,7 +30,7 @@
 #'   )
 #' )
 #' stop_recording(recording)
-#' @export
+#' @noRd
 start_recording <- function(dir, run, sources) {
   check_label(run, "A run")
   for (source in sources) {
@@ -90,14 +90,14 @@ start_recording <- function(dir, run, sources) {
 #' agreed on — turning a lost connection into evidence of agreement, which
 #' nothing downstream could then recover from.
 #'
-#' @param recording A `power_recording` from [start_recording()].
+#' @param recording A `power_recording` from `start_recording()`.
 #' @param samples Data frame with `source`, `time` and `power`. The `time`
 #'   values are written through unaltered, so the recorder's clock is what
 #'   reaches the file.
 #'
 #' @return The recording, with its row counts updated.
 #'
-#' @export
+#' @noRd
 record_samples <- function(recording, samples) {
   if (nrow(samples) == 0) {
     return(recording)
@@ -116,12 +116,12 @@ record_samples <- function(recording, samples) {
 
 #' Close a recording
 #'
-#' @param recording A `power_recording` from [start_recording()].
+#' @param recording A `power_recording` from `start_recording()`.
 #'
 #' @return A tibble of `run`, `source`, `path` and `rows` written — the first
 #'   three being the spec [read_rides()] wants.
 #'
-#' @export
+#' @noRd
 stop_recording <- function(recording) {
   for (con in recording$connections) {
     close(con)

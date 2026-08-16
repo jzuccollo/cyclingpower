@@ -13,7 +13,7 @@ chain_by_level(
 )
 }
 \arguments{
-\item{aligned}{Result of [align_rides()].}
+\item{aligned}{Result of \code{\link[=align_rides]{align_rides()}}.}
 
 \item{bridge}{Source common to more than one run. Found automatically when
 exactly one source qualifies.}
@@ -26,17 +26,21 @@ exactly one source qualifies.}
 }
 \value{
 A tibble with one row per band per source pair, restricted to bands
-  covered by every run involved.
+covered by every run involved.
 }
 \description{
-The level-wise counterpart to [chain_sources()], and on the same rule: a pair
+The level-wise counterpart to \code{\link[=chain_sources]{chain_sources()}}, and on the same rule: a pair
 that rode together is compared within each power band from its own seconds,
 and only a pair that never did is chained through the bridge. The bands kept
 are those every run actually covered, since a gain chained from bands one run
 never rode is extrapolation rather than measurement.
 }
 \examples{
-\dontrun{
-read_rides(spec) |> align_rides() |> chain_by_level()
+read_rides(demo_rides()) |> align_rides() |> chain_by_level()
 }
+\seealso{
+Other chaining:
+\code{\link[=bridge_candidates]{bridge_candidates()}},
+\code{\link[=chain_sources]{chain_sources()}}
 }
+\concept{chaining}

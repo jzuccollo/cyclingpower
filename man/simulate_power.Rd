@@ -12,7 +12,7 @@ simulate_power(n_seconds, target_ap, target_np, smoothness = 0.98)
 \item{target_ap}{Average power to hit, in watts.}
 
 \item{target_np}{Normalised power to hit, in watts. Cannot be below
-`target_ap`.}
+\code{target_ap}.}
 
 \item{smoothness}{Autocorrelation of the underlying effort, between 0 and 1.
 Higher values give long sustained efforts, lower values a more punchy ride.
@@ -21,7 +21,7 @@ its statistics.}
 }
 \value{
 Numeric vector of per-second power values, hitting both targets
-  exactly. Values are not rounded to whole watts, which would perturb them.
+exactly. Values are not rounded to whole watts, which would perturb them.
 }
 \description{
 Inverts the metrics: rather than summarising a ride you rode, it builds a
@@ -51,7 +51,7 @@ Nothing here knows about critical power, so nothing stops you naming targets
 no rider could hold. A normalised power above threshold sustained for an hour
 comes back as a series that would exhaust any W' several times over, and that
 is the target being impossible rather than the simulation being wrong: a
-*steady* hour at that power would fail the same test. Check the intensity you
+\emph{steady} hour at that power would fail the same test. Check the intensity you
 are asking for before reading anything into the shape that comes back.
 
 Within a feasible intensity the shape holds up, but its upper tail is
