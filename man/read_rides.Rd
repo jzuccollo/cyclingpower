@@ -17,8 +17,7 @@ prepended.
 \description{
 The unit of analysis is a run (one session, ridden once) recorded by two or
 more sources (power meters). This assembles that structure explicitly, so
-the \code{run} and \code{source} labels come from a spec you can read rather than
-from parsing filenames and hoping.
+the \code{run} and \code{source} labels come from a spec you can read.
 }
 \details{
 A directory is accepted as well as a spec, since a folder of files is what

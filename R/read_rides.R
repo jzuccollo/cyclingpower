@@ -2,8 +2,7 @@
 #'
 #' The unit of analysis is a run (one session, ridden once) recorded by two or
 #' more sources (power meters). This assembles that structure explicitly, so
-#' the `run` and `source` labels come from a spec you can read rather than
-#' from parsing filenames and hoping.
+#' the `run` and `source` labels come from a spec you can read.
 #'
 #' A directory is accepted as well as a spec, since a folder of files is what
 #' you usually have. The filenames are then read by [ride_spec_from_names()],
@@ -33,12 +32,14 @@ read_rides <- function(spec) {
     )
   }
 
-  purrr::pmap(
-    list(spec$path, spec$run, spec$source),
+  Map(
     function(path, run, source) {
       read_file(path) |>
         dplyr::mutate(run = run, source = source, .before = 1)
-    }
+    },
+    spec$path,
+    spec$run,
+    spec$source
   ) |>
     dplyr::bind_rows()
 }

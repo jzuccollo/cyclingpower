@@ -35,7 +35,6 @@ VignetteBuilder: knitr
 Imports:
     dplyr,
     ggplot2,
-    purrr,
     rlang,
     stats,
     tibble,
