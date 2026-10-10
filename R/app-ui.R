@@ -20,8 +20,8 @@ app_ui <- function() {
     # power-packet.js first: it defines the parser record.js calls, and holds
     # nothing else, so the tests can run it without a browser.
     header = shiny::tags$head(
-      shiny::tags$script(src = file.path(www_prefix, "power-packet.js")),
-      shiny::tags$script(src = file.path(www_prefix, "record.js"))
+      shiny::tags$script(src = asset_src("power-packet.js")),
+      shiny::tags$script(src = asset_src("record.js"))
     ),
 
     # bslib fills the viewport by default, which turns every card into a fixed
@@ -617,5 +617,20 @@ ui_report <- function() {
         shiny::uiOutput("report_summary")
       )
     )
+  )
+}
+
+# The scripts are served as static files with no cache-busting, so a browser
+# that has seen an earlier record.js keeps running it after the package is
+# updated: new markup and styling arrive from R, but the behaviour they depend
+# on does not. The modification time in the query string forces a fresh fetch
+# whenever a file changes.
+#' @noRd
+asset_src <- function(file) {
+  path <- system.file("shiny", "www", file, package = "cyclingpower")
+  paste0(
+    file.path(www_prefix, file),
+    "?v=",
+    as.integer(file.mtime(path))
   )
 }

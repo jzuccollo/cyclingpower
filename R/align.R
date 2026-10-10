@@ -106,6 +106,23 @@ resample_1hz <- function(x, origin) {
     dplyr::mutate(dplyr::across(
       dplyr::everything(),
       ~ replace(.x, is.nan(.x), NA)
+    )) |>
+    fill_jitter()
+}
+
+#' A meter notifying about once a second, stamped on arrival, lands some
+#' seconds twice and others not at all: rounding onto the grid left a Kickr
+#' with 14% of its seconds empty, which blanked its rolling mean almost
+#' everywhere. Gaps of up to two seconds are interpolated, which covers that
+#' jitter. Anything longer is a dropout and stays missing, so a lost connection
+#' is still not counted as agreement.
+#' @noRd
+fill_jitter <- function(x) {
+  tibble::tibble(t = seq(min(x$t), max(x$t))) |>
+    dplyr::left_join(x, by = "t") |>
+    dplyr::mutate(dplyr::across(
+      -"t",
+      ~ zoo::na.approx(.x, maxgap = 2, na.rm = FALSE)
     ))
 }
 

@@ -114,3 +114,23 @@ test_that("pauses stay as gaps rather than being interpolated over", {
 
   expect_true(all(is.na(gap$power)))
 })
+
+test_that("jittered once-a-second stamps leave no empty seconds, but a dropout stays", {
+  # A meter notifying every 0.99 s drifts across the second boundaries, so
+  # rounding alone leaves empty seconds. Planted: constant power, one real
+  # 10-second hole.
+  at <- cumsum(rep(0.99, 400))
+  at <- at[!(at > 200 & at < 210)]
+  origin <- as.POSIXct("2026-01-01", tz = "UTC")
+  x <- tibble::tibble(
+    time = origin + at,
+    run = "r",
+    source = "s",
+    power = 200
+  )
+
+  out <- resample_1hz(x, origin = origin)
+
+  expect_equal(out$power[out$t < 195], rep(200, sum(out$t < 195)))
+  expect_true(any(is.na(out$power[out$t > 201 & out$t < 209])))
+})
