@@ -128,24 +128,28 @@
   }
 
   // BLE connections drop, and a drop mid-ride must be visible rather than
-  // quietly leaving a flat file. Retries back off to five seconds and then give
-  // up; the meter stays in the list marked lost, and its file has a gap, which
-  // is what align_rides() and paired_seconds() expect of a dropout.
+  // quietly leaving a flat file. A power meter that has gone to sleep can take
+  // minutes of pedalling to advertise again, so retries back off to five
+  // seconds and then carry on for as long as the page is open. After twelve
+  // failures the tile reads lost, and flips back to live the moment the meter
+  // answers. The file has a gap over the dropout, which is what align_rides()
+  // and paired_seconds() expect.
   async function reconnect(meter) {
-    if (meter.dropped) return;
+    if (meter.dropped || meter.retrying) return;
+    meter.retrying = true;
     setState(meter, 'reconnecting');
 
-    for (var attempt = 1; attempt <= 12; attempt++) {
+    for (var attempt = 1; !meter.dropped; attempt++) {
       await wait(Math.min(1000 * attempt, 5000));
-      if (meter.dropped) return;
+      if (meter.dropped) break;
       try {
         await connect(meter);
-        return;
+        break;
       } catch (err) {
-        // Keep trying until the attempts run out.
+        if (attempt === 12) setState(meter, 'lost');
       }
     }
-    setState(meter, 'lost');
+    meter.retrying = false;
   }
 
   function wait(ms) {
@@ -161,6 +165,7 @@
     var now = Date.now();
 
     meter.power = parsed.power;
+    meter.lastAt = now;
     meter.trace.push({ at: now, power: parsed.power });
     var cutoff = now - TRACE_SECONDS * 1000;
     while (meter.trace.length > 0 && meter.trace[0].at < cutoff) {
@@ -225,17 +230,42 @@
 
   // Elapsed time on the recording's own clock, shown beside the controls.
   var startedAt = null;
+  var elapsedMs = 0;
+
+  // Freezes the clock at the final time, so the length of the ride is still on
+  // screen after Stop.
+  function stopClock() {
+    if (startedAt !== null) elapsedMs = Date.now() - startedAt;
+    startedAt = null;
+  }
 
   function drawClock() {
     var el = document.getElementById('record_clock');
     if (!el) return;
-    var total = startedAt === null ? 0 : Math.floor((Date.now() - startedAt) / 1000);
+    var ms = startedAt === null ? elapsedMs : Date.now() - startedAt;
+    var total = Math.floor(ms / 1000);
     var m = Math.floor(total / 60);
     var s = total % 60;
     el.textContent = m + ':' + (s < 10 ? '0' : '') + s;
   }
 
-  setInterval(drawClock, 500);
+  // The tiles are built when a state changes, so the watts are refreshed in
+  // place here. A meter that has said nothing for three seconds reads as a dash
+  // rather than as its last value.
+  function drawWatts() {
+    var now = Date.now();
+    for (var i = 0; i < meters.length; i++) {
+      var meter = meters[i];
+      if (!meter.wattsEl) continue;
+      var live = meter.power !== null && meter.lastAt && now - meter.lastAt < 3000;
+      meter.wattsEl.textContent = live ? meter.power + ' W' : '—';
+    }
+  }
+
+  setInterval(function () {
+    drawClock();
+    drawWatts();
+  }, 250);
 
   function drawStatus() {
     var container = document.getElementById('meter_status');
@@ -257,6 +287,7 @@
       var watts = document.createElement('span');
       watts.className = 'meter-watts';
       watts.textContent = meter.power === null ? '—' : meter.power + ' W';
+      meter.wattsEl = watts;
       chip.appendChild(watts);
 
       var state = document.createElement('span');
@@ -360,7 +391,7 @@
         recording = false;
         flush();
         releaseScreen();
-        startedAt = null;
+        stopClock();
       }
     },
     true
@@ -380,6 +411,7 @@
       pending = [];
       batch = 0;
       recording = true;
+      elapsedMs = 0;
       startedAt = Date.now();
       holdScreen();
       drawStatus();
@@ -393,7 +425,7 @@
       recording = false;
       flush();
       releaseScreen();
-      startedAt = null;
+      stopClock();
       drawStatus();
     });
 
