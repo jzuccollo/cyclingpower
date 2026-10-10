@@ -233,8 +233,8 @@ app_server <- function(input, output, session) {
 
   # An empty card with a Load button in it looks like a step that has been
   # skipped rather than one that is waiting on the step above. Rendered from
-  # the same output as the issues rather than its own: a card body is a flex
-  # column with a gap, so an empty uiOutput still costs a row of white.
+  # the same output as the issues: a card body is a flex column with a gap, so
+  # an empty uiOutput still costs a row of white.
   output$spec_issues <- shiny::renderUI({
     if (is.null(table_spec())) {
       return(shiny::div(
@@ -361,8 +361,8 @@ app_server <- function(input, output, session) {
     }
   )
 
-  # What the page reported it could do, rendered only once it has said so. Until
-  # then there is nothing honest to show.
+  # What the page reported it could do, rendered only once it has said so.
+  # Until then there is nothing to show.
   output$ble_status <- shiny::renderUI({
     if (is.null(input$ble_supported) || isTRUE(input$ble_supported)) {
       return(NULL)
@@ -500,10 +500,10 @@ app_server <- function(input, output, session) {
     }
     sources <- unlist(labels, use.names = FALSE)
 
-    # A boundary worth catching rather than letting through: an error in an
-    # observer tears the session down, and every one of these is something the
-    # user can act on — a name with an underscore in it, a directory that is
-    # not writable, a run already recorded.
+    # Caught rather than let through: an error in an observer tears the session
+    # down, and every one of these is something the user can act on — a name
+    # with an underscore in it, a directory that is not writable, a run already
+    # recorded.
     opened <- try(
       start_recording(input$record_dir, input$record_run, sources),
       silent = TRUE
@@ -532,10 +532,10 @@ app_server <- function(input, output, session) {
     )
   }
 
-  # Priority, and deliberately above the stop observer's. Stopping queues a
-  # final batch from the page before the button press reaches the server, and
-  # both can arrive in one flush; without the ordering the last half-second of
-  # a ride would be written after the files had been closed.
+  # Priority, above the stop observer's. Stopping queues a final batch from the
+  # page before the button press reaches the server, and both can arrive in one
+  # flush; without the ordering the last half-second of a ride would be written
+  # after the files had been closed.
   shiny::observeEvent(
     input$samples,
     {
@@ -666,9 +666,8 @@ app_server <- function(input, output, session) {
   )
 
   # The settings sit in a sidebar and the numbers render per tab, so nothing on
-  # screen otherwise says what produced them. One component, rendered under
-  # each set of numbers it governs, which is what consolidating the knobs into
-  # the sidebar costs and has to repay.
+  # screen otherwise says what produced them. One component, rendered under each
+  # set of numbers it governs.
   provenance <- function(...) {
     s <- settings()
     shiny::div(
@@ -835,9 +834,8 @@ app_server <- function(input, output, session) {
   )
 
   # An estimate and its interval belong in one cell. Three columns each turns
-  # the table into thirteen columns of numbers with the intervals too far from
-  # their point estimates to read together, which is the one comparison the
-  # table exists to support.
+  # the table into thirteen columns of numbers, with the intervals too far from
+  # their point estimates to read together.
   #
   # The estimate is padded to a fixed width and the cell set in pre, so the
   # estimates line up down the column. Right-aligning the whole string instead
@@ -990,7 +988,7 @@ app_server <- function(input, output, session) {
   # Built by hand rather than through renderTable so a chained row can carry a
   # class. Unmarked, -3.11 (-4.22 to -2.02) looks exactly as authoritative as
   # the direct rows above it, and the three em-dashes read as missing data
-  # rather than as a comparison that has no watts to report.
+  # instead of a comparison that has no watts to report.
   output$pair_table <- shiny::renderUI({
     rows <- pair_table()
     numeric_cols <- c("Gain %", "Difference (W)")
@@ -1162,8 +1160,7 @@ app_server <- function(input, output, session) {
   # Triggered on the per-cent gain, and only when the extreme bands' intervals
   # are separated. On watts it would fire for every clean percentage meter,
   # whose difference rises across the range purely because a percentage of
-  # 300 W exceeds a percentage of 100 W — which is the exact confusion this
-  # alert exists to dispel.
+  # 300 W exceeds a percentage of 100 W. See level_dependence().
   output$level_alert <- shiny::renderUI({
     uneven <- level_dependence(by_level())
     uneven <- uneven[uneven$separated, ]
@@ -1344,8 +1341,8 @@ app_server <- function(input, output, session) {
 
   # ---- Reseed ------------------------------------------------------------
 
-  # What has to match for two seeds to be comparable at all. The seed itself is
-  # deliberately not in it.
+  # What has to match for two seeds to be comparable at all. Not the seed
+  # itself.
   comparable <- shiny::reactive({
     list(align_key(), settings()[c("min_power", "block", "replicates")])
   })
@@ -1439,9 +1436,9 @@ app_server <- function(input, output, session) {
 
   shiny::observeEvent(input$render, {
     path <- file.path(tempdir(), "power-comparison.html")
-    # Against house style in general, but a genuine boundary: an error in an
-    # observer tears down the session, and the user can act on a message like
-    # pandoc not found.
+    # Against house style in general, but a boundary: an error in an observer
+    # tears down the session, and the user can act on a message like pandoc not
+    # found.
     out <- try(render_comparison(report_results(), path), silent = TRUE)
     if (inherits(out, "try-error")) {
       report_error(conditionMessage(attr(out, "condition")))

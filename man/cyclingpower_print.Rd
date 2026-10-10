@@ -19,10 +19,10 @@
 \code{x}, invisibly.
 }
 \description{
-A comparison returns a tibble of thirteen columns, and the question that
-sent someone here is a sentence: does this meter read high or low, by how
-much, and how sure can I be. These methods say that first and then print the
-tibble as normal, so nothing downstream changes.
+A comparison returns a tibble of estimates and intervals, and the question
+that sent someone here is a sentence: does this meter read high or low, by
+how much, and how sure can I be. These methods say that first and then print
+the tibble as normal, so nothing downstream changes.
 }
 \examples{
 aligned <- read_rides(demo_rides()) |> align_rides()

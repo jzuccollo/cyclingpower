@@ -1,9 +1,9 @@
 #' The answer, before the table
 #'
-#' A comparison returns a tibble of thirteen columns, and the question that
-#' sent someone here is a sentence: does this meter read high or low, by how
-#' much, and how sure can I be. These methods say that first and then print the
-#' tibble as normal, so nothing downstream changes.
+#' A comparison returns a tibble of estimates and intervals, and the question
+#' that sent someone here is a sentence: does this meter read high or low, by
+#' how much, and how sure can I be. These methods say that first and then print
+#' the tibble as normal, so nothing downstream changes.
 #'
 #' @param x A result from [power_agreement()] or [chain_sources()].
 #' @param ... Passed to the tibble print method.
@@ -59,8 +59,7 @@ print.cyclingpower_chain <- function(x, ...) {
 #'
 #' The interval is turned to face the same way as the point estimate, so
 #' "higher" is described by a higher-is-positive interval. An interval that
-#' still straddles zero after that is telling you the direction is not
-#' resolved, which is worth seeing.
+#' still straddles zero after that says the direction is not resolved.
 #' @noRd
 gain_sentence <- function(row) {
   higher <- row$gain_pc >= 0

@@ -21,13 +21,12 @@ separated.
 \details{
 The test is on the per-cent gain, not on watts. A meter that is a constant
 2.5\% out reads further from its partner at 300 W than at 100 W, so a watts
-comparison of the extreme bands separates for every clean percentage meter
-— which is the precise confusion this exists to dispel. In per cent, that
-meter is flat and only a genuinely level-dependent one separates.
+comparison of the extreme bands separates for every clean percentage meter.
+In per cent, that meter is flat and only a level-dependent one separates.
 
 Separation is non-overlapping 95\% intervals, so there is no threshold
 constant to argue about; a pair with too few seconds to resolve anything
-simply does not fire.
+does not fire.
 }
 \examples{
 aligned <- read_rides(demo_rides()) |> align_rides()

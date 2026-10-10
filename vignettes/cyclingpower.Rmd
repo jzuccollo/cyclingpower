@@ -47,7 +47,7 @@ list.files(dir)
 
 Real files replace these unchanged. `vignette("recording_rides")` covers how to
 record them, and several of the decisions there — recording rate, auto-pause,
-and what to actually ride — determine whether the steps below can work at all.
+and what to ride — determine whether the steps below can work at all.
 
 ## Getting files into the comparison
 
@@ -77,10 +77,10 @@ head(one, 3)
 
 ## Putting the sources on one clock
 
-That seven-second offset matters more than it looks. Differencing the two
-series on their nominal timestamps compares power from one moment against power
-from another, which inflates the spread and shifts the average difference, and
-nothing about the result announces that it has happened. `align_rides()`
+That seven-second offset matters. Differencing the two series on their nominal
+timestamps compares power from one moment against power from another, which
+inflates the spread and shifts the average difference, and nothing about the
+result announces that it has happened. `align_rides()`
 resamples each source onto a one-second grid and recovers the offset by
 cross-correlating the power traces.
 
@@ -89,14 +89,13 @@ aligned <- align_rides(rides)
 alignment_report(aligned)
 ```
 
-The seven seconds planted in kickr's clock come back as seven. The report is
-worth reading rather than skipping: `offset` is the correction applied,
-`correlation` how well the traces matched at that offset, and `status` whether
-the offset was established at all. Where both channels came off a single head
-unit the offset is simply zero and the same code path serves. Where a ride was
-too steady to lock onto — a long block at constant power has no features to
-align against — the status comes back `unresolved`, the recorded timestamps
-stand, and a warning says so.
+The seven seconds planted in kickr's clock come back as seven. `offset` is the
+correction applied, `correlation` how well the traces matched at that offset,
+and `status` whether the offset was established at all. Where both channels came
+off a single head unit the offset is zero and the same code path serves. Where a
+ride was too steady to lock onto — a long block at constant power has no
+features to align against — the status comes back `unresolved`, the recorded
+timestamps stand, and a warning says so.
 
 ```{r timeseries}
 plot_timeseries(aligned)
@@ -149,10 +148,10 @@ about five per cent high above it. The average was not wrong — the errors real
 do cancel over this ride — but it describes no part of the range, and on a ride
 weighted differently it would have come out somewhere else entirely.
 
-Binning on the mean rather than on one nominated meter is deliberate. If you bin
-by assioma and then plot assioma minus quarq against those bins, assioma's own
-measurement noise pushes the points into a slope, and you see a trend that is an
-artefact of the plotting rather than a property of the meters.
+Seconds are binned on the mean of the two meters, never on one nominated meter.
+If you bin by assioma and then plot assioma minus quarq against those bins,
+assioma's own measurement noise pushes the points into a slope, and the trend
+you see is an artefact of the plotting.
 
 `level_dependence()` states it rather than leaving it to the eye:
 
@@ -161,8 +160,8 @@ level_dependence(by_level)
 ```
 
 `separated` is whether the extreme bands' 95% intervals overlap, so a pair with
-too few seconds to resolve anything simply does not fire. run1's clean 2.5 per
-cent gain is flat across the range and does not separate; run2 does.
+too few seconds to resolve anything does not fire. run1's clean 2.5 per cent
+gain is flat across the range and does not separate; run2 does.
 
 `seconds` travels with every row because time is not spread evenly across the
 power range. The ends are usually thin, and an estimate resting on twenty
@@ -181,10 +180,9 @@ chained <- chain_sources(aligned)
 chained
 ```
 
-The `basis` column marks the last row as chained rather than directly observed,
-and that distinction is the point: the two direct comparisons rest on seconds
-where both meters measured the same effort, while the chained one rests on an
-assumption as well.
+The `basis` column marks the last row as chained rather than directly observed.
+The two direct comparisons rest on seconds where both meters measured the same
+effort; the chained one rests on an assumption as well.
 
 ```{r chain-plot}
 plot_chain(chained)
@@ -192,9 +190,9 @@ plot_chain(chained)
 
 The assumption is that assioma read the same on both days, and nothing in the
 ride files can test it. A meter that drifted between the two sessions moves the
-kickr-to-quarq figure by exactly the amount it drifted, and the data offer no
-way to tell that apart from a genuine difference between the two. That is why
-the print method says so without being asked. `chain_report()` states it again
+kickr-to-quarq figure by exactly the amount it drifted, and nothing in the data
+separates that from a difference between the meters. That is why the print
+method says so without being asked. `chain_report()` states it again
 and reports what *can* be checked, which is whether the two runs covered
 comparable power — gains estimated over different parts of the range are not
 really comparable at all.
@@ -206,8 +204,8 @@ report$overlap
 report$coverage
 ```
 
-Note also that the chained interval is wider than either direct one it is built
-from. It has to be: two independently bootstrapped runs are being subtracted.
+The chained interval is wider than either direct one it is built from. It has to
+be: two independently bootstrapped runs are being subtracted.
 
 ## Doing all of it at once
 

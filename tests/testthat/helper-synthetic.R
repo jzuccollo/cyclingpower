@@ -50,7 +50,7 @@ make_level_dependent <- function(ride, low_gain, high_gain, threshold) {
 }
 
 #' A steady effort with no sharp features, recorded twice with independent
-#' noise: the case where a clock offset genuinely cannot be identified.
+#' noise: the case where a clock offset cannot be identified.
 featureless_rides <- function(n = 600) {
   base <- fixture_ride()[seq_len(n), ]
   base$power <- 200 + 5 * sin(seq_len(n) / 300)

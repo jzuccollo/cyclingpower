@@ -1,7 +1,7 @@
 // The recorder. Talks to the meters over Web Bluetooth, stamps every sample
 // with this page's clock, and hands batches to R, which owns the files.
 //
-// Two things here are load-bearing and easy to undo by accident.
+// Two things here are easy to undo by accident and break the recording.
 //
 // First, requestDevice() may only be called from a user gesture, so the Pair
 // button is handled in this file rather than by an observer in R. Routing the
@@ -9,9 +9,8 @@
 // chooser would never open.
 //
 // Second, one clock stamps every meter. The stamp is taken here, on arrival,
-// and nothing the meter reports about time is used. That is the whole reason
-// for recording this way: the offsets are zero by construction rather than
-// recovered by cross-correlation afterwards.
+// and nothing the meter reports about time is used, so the offsets are zero by
+// construction rather than recovered by cross-correlation afterwards.
 
 (function () {
   'use strict';
@@ -75,7 +74,7 @@
         filters: [{ services: [POWER_SERVICE] }]
       });
     } catch (err) {
-      // Dismissing the chooser throws. It is not a failure worth reporting.
+      // Dismissing the chooser throws, and is not a failure to report.
       return;
     }
 
@@ -130,8 +129,8 @@
 
   // BLE connections drop, and a drop mid-ride must be visible rather than
   // quietly leaving a flat file. Retries back off to five seconds and then give
-  // up; the meter stays in the list marked lost, and its file simply has a gap,
-  // which is what align_rides() and paired_seconds() expect of a dropout.
+  // up; the meter stays in the list marked lost, and its file has a gap, which
+  // is what align_rides() and paired_seconds() expect of a dropout.
   async function reconnect(meter) {
     if (meter.dropped) return;
     setState(meter, 'reconnecting');
@@ -376,8 +375,8 @@
       drawStatus();
     });
 
-    // Dropping a meter is deliberate rather than a fault, so it must not go
-    // round the reconnection loop.
+    // Dropping a meter is a user action, not a fault, so it must not go round
+    // the reconnection loop.
     Shiny.addCustomMessageHandler('meter_drop', function (msg) {
       var meter = findMeter(msg.slot);
       if (!meter) return;

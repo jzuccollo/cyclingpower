@@ -11,19 +11,23 @@ vignette: >
 knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>",
-  eval = FALSE
+  eval = FALSE,
+  # The chunks below describe riding that has not happened and files that do
+  # not exist, so they are illustrations rather than examples. Tangling them
+  # hands R CMD check a script it will try to run, which fails on the first
+  # bare call before the vignette ever reaches its library() line.
+  purl = FALSE
 )
 ```
 
 Everything in `vignette("cyclingpower")` assumes you already have two or three
-files recorded from the same riding. Getting those files is the part that
-actually goes wrong, and most of the ways it goes wrong cannot be repaired
-afterwards: a dropped sample is gone, a mid-ride auto-pause cannot be undone,
-and a perfectly steady hour contains no evidence about how far apart the head
-unit clocks were.
+files recorded from the same riding. Getting those files is where it goes wrong,
+and most of the ways it goes wrong cannot be repaired afterwards: a dropped
+sample is gone, a mid-ride auto-pause cannot be undone, and a perfectly steady
+hour contains no evidence about how far apart the head unit clocks were.
 
-This vignette is the recording protocol. It is short, and following it costs
-one extra minute at the start of a ride.
+This vignette is the recording protocol. Following it costs one extra minute at
+the start of a ride.
 
 There are two routes, and most of what can go wrong belongs to only one of
 them. `launch_app()` can record the meters itself over Web Bluetooth, in which
@@ -41,7 +45,7 @@ recovered from them afterwards. Auto-pause, smart recording and an unset head
 unit clock are all failure modes of independent recorders, and none of them
 exists here.
 
-Four constraints come with it, and none is worth discovering mid-ride.
+Four constraints come with it. Settle all four before the ride.
 
 **Chrome or Edge.** Safari has never shipped Web Bluetooth and WebKit has no
 active bug for it; Mozilla declined the specification on privacy grounds. The
@@ -50,8 +54,8 @@ does nothing. `http://localhost` counts as a secure context, so nothing has to
 be done about certificates.
 
 **One press per meter.** The browser will not open its device chooser
-programmatically, so pairing three meters is three presses. This is a hard rule
-and there is no way round it.
+programmatically, so pairing three meters is three presses. There is no way
+round it.
 
 **A meter holds one Bluetooth connection at a time.** While the page has the
 trainer, Zwift and TrainerRoad cannot. Pair the training app to the trainer over
@@ -74,10 +78,9 @@ any other: the handoff between the recorder and the analysis is the filesystem
 and nothing else.
 
 A meter that drops out is shown as disconnected and reconnected automatically.
-The seconds it missed are a gap in its file, not a run of zeros, which matters
-more than it looks: zeros would be read as coasting, and coasting is dropped as
-a second both meters agreed on, so a lost connection would enter the comparison
-as evidence of agreement.
+The seconds it missed are a gap in its file, not a run of zeros. Zeros would be
+read as coasting, and coasting is dropped as a second both meters agreed on, so
+a lost connection would enter the comparison as evidence of agreement.
 
 One caveat. The packet parser is unit-tested against captured byte arrays, and
 the file writing is tested end to end through the same pipeline every other ride
@@ -95,13 +98,13 @@ zero by construction and that compromise dissolves: erg mode becomes the *best*
 ride rather than the worst, because it puts a chosen number of seconds into a
 chosen band instead of leaving band coverage to how the day went.
 
-One piece has to survive, and the reason is easy to miss. With no feature to
-lock onto, `check_alignment()` cannot tell "these clocks agree" from "these
-traces cannot be compared at all": it collapses both into `unresolved`, forces
-the offset to zero and warns. A recorder that stamped every meter wrongly would
-pass that check exactly as a correct one does. So a short sync block stays — not
-to find the offset, but to make finding it possible, so that a resolved zero is
-evidence rather than a default.
+One piece has to survive. With no feature to lock onto, `check_alignment()`
+cannot tell "these clocks agree" from "these traces cannot be compared at all":
+it collapses both into `unresolved`, forces the offset to zero and warns. A
+recorder that stamped every meter wrongly would pass that check exactly as a
+correct one does. So a short sync block stays — not to find the offset, but to
+make finding it possible, so that a resolved zero is evidence rather than a
+default.
 
 ```{r, eval = TRUE, echo = FALSE}
 knitr::kable(
@@ -126,21 +129,21 @@ bands, so a band carries roughly twice the step length, and at a 60-second block
 two-minute steps leave it about four blocks to resample. Going shorter drops
 under three, and a bootstrap drawing two blocks is not estimating anything. The
 cost of getting here from four-minute steps is about 17% wider bands, measured
-on synthetic rides with a planted gain — which is a good trade for halving the
-session, and a bad one to repeat.
+on synthetic rides with a planted gain. That was a good trade for halving the
+session; going shorter again is not.
 
-**There is deliberately no sync block at the end.** A closing block detects only
-a clock that drifted during the ride, and when the app records there is one
-clock stamping every meter, which cannot drift relative to itself. Independent
-head units are the case where two clocks genuinely separate, and that route —
-below — should still repeat the surges at the end.
+**There is no sync block at the end.** A closing block detects only a clock that
+drifted during the ride, and when the app records there is one clock stamping
+every meter, which cannot drift relative to itself. Independent head units are
+the case where two clocks can separate, and that route — below — should still
+repeat the surges at the end.
 
 That table is `comparison_protocol()`, and `write_workout()` turns it into a
 file your training app can command, so "identically every time" is something the
 trainer does rather than something you remember. The Record tab has the same
 table and a download button on it.
 
-```{r}
+```{r, purl = FALSE}
 write_workout("comparison.zwo", ftp = 250)
 ```
 
@@ -151,11 +154,11 @@ no way to express that, so it carries the surge targets as watts and you switch
 out of erg by hand. Either file is loaded into the training app, which commands
 the trainer over ANT+ while this page holds its Bluetooth.
 
-**The ladder runs up and then down deliberately.** A meter reading high because
-it has warmed up gives different numbers at the same target on the way down; a
-genuinely level-dependent meter repeats itself. Ridden in one direction only the
-two are indistinguishable, and `level_dependence()` would report the drift as an
-error that depends on power.
+**The ladder runs up and then back down.** A meter reading high because it has
+warmed up gives different numbers at the same target on the way down; a
+level-dependent meter repeats itself. Ridden in one direction only the two are
+indistinguishable, and `level_dependence()` would report the drift as an error
+that depends on power.
 
 **Do not surge in erg.** The trainer fights the surge and rounds off precisely
 the edge the cross-correlation needs. Switch to level or slope mode for the sync
@@ -177,8 +180,8 @@ the schema, though nothing in the package looks at it yet.
 
 A head unit is the easiest thing to put on the other end, and on a Wahoo ELEMNT,
 BOLT or ROAM the workout can be pushed to it from intervals.icu, which imports
-`.zwo` directly. Three things about that route are worth knowing before the
-ride, because two of them are silent when they go wrong.
+`.zwo` directly. Three things to settle before the ride; two of them are silent
+when they go wrong.
 
 **Force the head unit to pair the trainer over ANT+.** An ELEMNT connects to a
 Wahoo trainer over Bluetooth by default, and pairing it that way spends the
@@ -192,18 +195,17 @@ to build a session on.
 **A block with no power target releases erg by itself.** In planned-workout mode
 the head unit follows the workout's own resistance design, and a segment
 carrying no target drops the trainer into resistance mode rather than holding
-the last one. That is precisely what the sync surges need, so the `FreeRide`
-blocks come out right without anything being switched by hand.
+the last one. That is what the sync surges need, so the `FreeRide` blocks come
+out right without anything being switched by hand.
 
-**The workout and the recording are independent, which is the safety net.** The
-head unit commands the trainer; this page records; nothing passes between them.
-So the sync block only has to be in the *recording*, not in the workout — if the
-surges arrive as erg targets anyway, ride them in level mode before starting the
-workout and the comparison cannot tell the difference. The same independence is
-worth exploiting on the first session: the head unit is recording the ride
-regardless, so its own file of the trainer against this page's file of the same
-trainer is a free check on the one path in the recorder that has no automated
-test.
+**The workout and the recording are independent.** The head unit commands the
+trainer; this page records; nothing passes between them. So the sync block only
+has to be in the *recording*, not in the workout — if the surges arrive as erg
+targets anyway, ride them in level mode before starting the workout and the
+comparison cannot tell the difference. Exploit that on the first session: the
+head unit is recording the ride regardless, so its own file of the trainer
+against this page's file of the same trainer is a free check on the one path in
+the recorder that has no automated test.
 
 ## One meter, many listeners
 
@@ -245,7 +247,7 @@ important enough to buy one for.
 
 ## Settings on each recorder
 
-Three settings matter, and the first two matter a great deal.
+Three settings matter, the first two a great deal.
 
 **Record every second, not "smart" recording.** Garmin's smart recording writes
 a sample only when the numbers change enough, which produces a file with
@@ -287,9 +289,9 @@ indication of why.
 
 ## What to ride on separate head units
 
-Two things the analysis needs pull in opposite directions, and this is the part
-worth planning. It is the compromise the app's single clock dissolves, so if you
-are recording in the app, ride the session in the table above instead.
+Two things the analysis needs pull in opposite directions. It is the compromise
+the app's single clock dissolves, so if you are recording in the app, ride the
+session in the table above instead.
 
 **The alignment needs features.** `align_rides()` recovers each clock offset by
 sliding one power trace against another and taking the offset with the highest
@@ -392,7 +394,7 @@ Then `ride_spec_from_names()` builds the table `read_rides()` wants, and a
 filename that does not split cleanly is an error rather than a silently
 mislabelled ride.
 
-```{r pipeline}
+```{r pipeline, purl = FALSE}
 library(cyclingpower)
 
 aligned <- list.files("rides", full.names = TRUE) |>
@@ -403,12 +405,12 @@ aligned <- list.files("rides", full.names = TRUE) |>
 
 ## Checking that the recording worked
 
-Three checks before you trust anything downstream, all worth doing while you
-could still repeat the ride.
+Three checks before you trust anything downstream, all of them while you could
+still repeat the ride.
 
 The alignment resolved:
 
-```{r check-alignment}
+```{r check-alignment, purl = FALSE}
 alignment_report(aligned)
 ```
 
@@ -418,27 +420,23 @@ soft or is missing; a large correlation with a large offset means the clocks
 really were far apart, which is fine. A low correlation on a ride you know had
 surges in it usually means the two files are not the same session.
 
-For a ride the app recorded, the offset should be zero — but the `status` is the
-load-bearing half of that sentence. An offset of zero on its own is exactly what
-`check_alignment()` returns when it could not tell, so a recording that comes
-back `unresolved` has not been checked at all, and a session ridden with no sync
-block cannot be checked. `aligned` with an offset of zero is the result to look
-for: it says the machinery could have found an offset and found none.
+For a ride the app recorded, look for `aligned` with an offset of zero, not an
+offset of zero on its own. `unresolved` returns zero too, and means the check
+could not be made.
 
 The bins are populated:
 
-```{r check-coverage}
+```{r check-coverage, purl = FALSE}
 agreement_by_level(aligned) |>
-  dplyr::select(pair, level, seconds, bias_w)
+  dplyr::select(source_a, source_b, band_range, seconds, bias_w)
 ```
 
-The `seconds` column is there to be read. A bin resting on twenty seconds is
-not evidence of anything, and the steps are what fill the bins you care about.
+A bin resting on twenty seconds is not evidence of anything, and the steps are
+what fill the bins you care about.
 
-And, for a chained comparison, that the two runs actually covered comparable
-ground:
+And, for a chained comparison, that the two runs covered comparable ground:
 
-```{r check-chain}
+```{r check-chain, purl = FALSE}
 chain_report(chain_sources(aligned))$coverage
 ```
 

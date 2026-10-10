@@ -8,8 +8,7 @@
 #'
 #' Samples are flushed to disk as they arrive rather than held and written at
 #' the end, so a browser tab that dies mid-ride costs the last fraction of a
-#' second rather than the whole recording. Analysis is repeatable and recording
-#' is not, which is the argument for the whole arrangement.
+#' second rather than the whole recording.
 #'
 #' @param dir Directory to write into. Created if it does not exist.
 #' @param run Label for this session, shared by every file.
@@ -45,9 +44,9 @@ start_recording <- function(dir, run, sources) {
   dir.create(dir, recursive = TRUE, showWarnings = FALSE)
   paths <- file.path(dir, paste0(run, "_", sources, ".csv"))
 
-  # A genuine boundary. Appending today's ride to a file of the same name from
-  # last week produces one file spanning two sessions, which reads as a single
-  # ride with an enormous gap in the middle and nothing to say otherwise.
+  # Appending today's ride to a file of the same name from last week produces
+  # one file spanning two sessions, which reads as a single ride with an
+  # enormous gap in the middle and nothing to say otherwise.
   taken <- paths[file.exists(paths)]
   if (length(taken) > 0) {
     stop(
@@ -86,9 +85,9 @@ start_recording <- function(dir, run, sources) {
 #' A sample is written only when one arrives. A meter that drops out leaves a
 #' gap, which [align_rides()] resamples over and `paired_seconds()` has no row
 #' for. Padding the gap with zeros instead would enter the dropout into the
-#' comparison as genuine coasting, where it is dropped as a second both meters
-#' agreed on — turning a lost connection into evidence of agreement, which
-#' nothing downstream could then recover from.
+#' comparison as coasting, where it is dropped as a second both meters agreed
+#' on — turning a lost connection into evidence of agreement, which nothing
+#' downstream could then recover from.
 #'
 #' @param recording A `power_recording` from `start_recording()`.
 #' @param samples Data frame with `source`, `time` and `power`. The `time`

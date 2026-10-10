@@ -20,9 +20,9 @@ read_csv_ride <- function(path) {
   canonicalise(out, path)
 }
 
-#' Two spellings are worth accepting: ISO 8601, which is what a recorder should
-#' write, and epoch seconds, which is what falls out of a script that never
-#' bothered to format the clock.
+#' Two spellings: ISO 8601, which is what a recorder should write, and epoch
+#' seconds, which is what falls out of a script that never bothered to format
+#' the clock.
 #' @noRd
 parse_csv_time <- function(x) {
   if (is.numeric(x)) {

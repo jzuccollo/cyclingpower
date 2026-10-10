@@ -9,8 +9,8 @@
 #' Within each run every source is resampled onto a one-second grid, then the
 #' offset against a reference source is estimated by maximising the
 #' cross-correlation of the power series. Where both channels came from a
-#' single head unit the estimate is simply zero, so the same path serves both
-#' cases. Gaps left by pauses or smart recording stay `NA` rather than being
+#' single head unit the estimate is zero, so the same path serves both cases.
+#' Gaps left by pauses or smart recording stay `NA` rather than being
 #' interpolated across.
 #'
 #' @param rides Long tibble from [read_rides()].
@@ -161,8 +161,8 @@ best_lag <- function(reference, candidate, max_offset) {
 
 #' How well the traces must match at the best offset, and how far that peak
 #' must stand above the rest of the surface, for the offset to count as
-#' established. Both are judgement calls rather than tuning parameters: below
-#' these, the data did not settle the question.
+#' established. Both are judgement calls, not tuning parameters: below these,
+#' the data did not settle the question.
 #' @noRd
 MIN_CORRELATION <- 0.5
 MIN_SHARPNESS <- 0.02

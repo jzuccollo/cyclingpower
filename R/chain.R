@@ -15,7 +15,7 @@
 #' and nothing in the ride files distinguishes that from a real difference.
 #' What can be checked is reported by [chain_report()] — whether the two runs
 #' covered comparable power, since gains compared over different parts of the
-#' range are not really comparable at all.
+#' range are not comparable.
 #'
 #' @param aligned Result of [align_rides()].
 #' @param bridge Source common to more than one run. Found automatically when
@@ -163,8 +163,8 @@ bridge_pairs <- function(seconds, bridge) {
 #' source over the second with its bootstrap draws, pooled over the runs
 #' carrying the pair.
 #'
-#' Each run is resampled on its own, which is what makes the interval on a
-#' chained comparison wider than either of the gains it is built from.
+#' Each run is resampled on its own, so the interval on a chained comparison is
+#' wider than either of the gains it is built from.
 #' @noRd
 pair_estimates <- function(seconds, block, replicates) {
   key <- paste(seconds$source_a, seconds$source_b, sep = "|")
@@ -208,8 +208,8 @@ pool_runs <- function(estimates) {
 }
 
 #' Each source on the bridge's scale, which is what makes two meters from
-#' different runs comparable. The gain is the pair's own estimate, negated where
-#' the bridge sorts first, since a pair is stored as log(first / second).
+#' different runs comparable. The gain is the pair's own estimate, negated
+#' where the bridge sorts first, since a pair is stored as log(first / second).
 #' @noRd
 bridge_gains <- function(observed, sources, bridge, replicates) {
   gains <- lapply(sources, function(source) {

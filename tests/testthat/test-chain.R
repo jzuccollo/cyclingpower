@@ -237,8 +237,8 @@ test_that("a pair that rode together is compared from its own seconds", {
   expect_equal(ac$basis, "direct")
   expect_equal(ac$gain_pc, direct$gain_pc)
 
-  # Routed through B it would not be, which is what makes the assertion above
-  # worth making rather than an identity.
+  # Routed through B it would not be, so the assertion above is not an
+  # identity.
   legs <- out[out$source_a == "A" & out$source_b == "B", ]$gain_pc
   via_b <- out[out$source_a == "B" & out$source_b == "C", ]$gain_pc
   expect_false(isTRUE(all.equal(

@@ -109,8 +109,7 @@ power_agreement <- function(
 }
 
 #' Both intervals come off one set of resampled indices, so the watts and the
-#' per cent on a row describe the same resampled seconds rather than two
-#' independent attempts at the same pair.
+#' per cent on a row describe the same resampled seconds.
 #' @noRd
 agreement_summary <- function(pair, block, replicates) {
   n <- nrow(pair)
@@ -211,12 +210,8 @@ agreement_by_level <- function(
 
 #' Power is autocorrelated, so consecutive seconds mostly land in the same
 #' band and blocks of rows within a band are largely contiguous in time. The
-#' block bootstrap is applied on that basis.
-#'
-#' Both statistics are evaluated on one set of resampled indices. Generating
-#' them is what costs, so the per-cent interval is close to free, and the two
-#' intervals then describe the same resampled seconds rather than two
-#' independent attempts at the same band.
+#' block bootstrap is applied on that basis, both statistics over one set of
+#' resampled indices as in `agreement_summary()`.
 #' @noRd
 level_summary <- function(band, block, replicates) {
   n <- nrow(band)
@@ -247,13 +242,12 @@ level_summary <- function(band, block, replicates) {
 #'
 #' The test is on the per-cent gain, not on watts. A meter that is a constant
 #' 2.5% out reads further from its partner at 300 W than at 100 W, so a watts
-#' comparison of the extreme bands separates for every clean percentage meter
-#' — which is the precise confusion this exists to dispel. In per cent, that
-#' meter is flat and only a genuinely level-dependent one separates.
+#' comparison of the extreme bands separates for every clean percentage meter.
+#' In per cent, that meter is flat and only a level-dependent one separates.
 #'
 #' Separation is non-overlapping 95% intervals, so there is no threshold
 #' constant to argue about; a pair with too few seconds to resolve anything
-#' simply does not fire.
+#' does not fire.
 #'
 #' @param by_level Result of [agreement_by_level()].
 #'

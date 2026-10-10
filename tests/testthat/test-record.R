@@ -7,12 +7,10 @@
 # The radio path — requestDevice, the GATT connection, notifications, the
 # reconnection loop, the wake lock — is NOT tested and cannot be. It needs a
 # physical meter, a paired browser and a user gesture, none of which exist in
-# testthat or in CI. That is a real departure from this suite's discipline of
+# testthat or in CI. That is a departure from this suite's discipline of
 # planting a known distortion and asserting the machinery recovers it, and it
-# is stated here rather than papered over, because the rest of the package's
-# credibility rests on that discipline being visible where it holds and where
-# it does not. What is left is a ride the recorder produced, checked by hand
-# against the head units it replaced.
+# is stated here so the gap is visible. What is left is a ride the recorder
+# produced, checked by hand against the head units it replaced.
 
 # ---- The packet parser --------------------------------------------------
 

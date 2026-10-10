@@ -1,8 +1,8 @@
 // Cycling Power Measurement (characteristic 0x2A63), parsed here and nowhere
-// else. The file deliberately touches no browser global — no window, no Shiny,
-// no DOM — because it is the one part of the recorder that can be tested
-// without a radio, and test-record.R runs it under V8. Keep it that way:
-// anything needing a browser belongs in record.js.
+// else. The file touches no browser global — no window, no Shiny, no DOM —
+// because it is the one part of the recorder that can be tested without a
+// radio, and test-record.R runs it under V8. Keep it that way: anything
+// needing a browser belongs in record.js.
 
 // The characteristic is little-endian throughout. Two fields are mandatory:
 // uint16 flags at offset 0 and sint16 instantaneous watts at offset 2. Power is
@@ -11,10 +11,10 @@
 
 // The optional fields, in the order the specification lays them out, with the
 // flag bit announcing each and the bytes it occupies. Nothing here reads their
-// values. Walking the table anyway is what keeps the parser honest: the flags
-// are decoded against the real layout rather than assumed away, so adding
-// cadence later is reading a field at an offset this already computed, rather
-// than rediscovering the layout and getting it a byte wrong.
+// values; the table is walked anyway so the flags are decoded against the real
+// layout. Adding cadence later is then reading a field at an offset this
+// already computed, rather than rediscovering the layout and getting it a byte
+// wrong.
 var CYCLING_POWER_FIELDS = [
   { bit: 0, name: 'pedalPowerBalance', bytes: 1 },
   { bit: 2, name: 'accumulatedTorque', bytes: 2 },

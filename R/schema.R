@@ -1,7 +1,4 @@
-#' Every reader returns this shape, whatever the container format. Keeping it
-#' in one place is what stops the FIT and GPX paths drifting apart, which is
-#' how the FIT reader came to emit `timestamp` while the GPX reader emitted
-#' `time`.
+#' Every reader returns this shape, whatever the container format.
 #' @noRd
 canonical_columns <- function() {
   c(
@@ -19,7 +16,7 @@ canonical_columns <- function() {
 }
 
 #' Devices vary in whether they write the plain or `enhanced_` variant of
-#' altitude and speed, and FIT names things after the FIT profile.
+#' altitude and speed.
 #' @noRd
 column_aliases <- function() {
   c(
@@ -50,7 +47,7 @@ canonicalise <- function(x, file) {
 
   # After coercion, not before: a GPX with an empty <power/> on every trackpoint
   # has a power column made entirely of "", which is present and not NA but
-  # carries nothing. Checking the raw column passes it through as an all-NA
+  # empty. Checking the raw column passes it through as an all-NA
   # numeric that fails much later with nothing to point at.
   if (!"power" %in% names(x) || all(is.na(x$power))) {
     abort_no_power(file)
@@ -60,8 +57,8 @@ canonicalise <- function(x, file) {
   tibble::as_tibble(x)
 }
 
-#' Worth a specific message: the usual cause is not a corrupt file but an
-#' activity whose power Strava estimated rather than recorded.
+#' The usual cause is not a corrupt file but an activity whose power Strava
+#' estimated rather than recorded.
 #' @noRd
 abort_no_power <- function(file) {
   stop(

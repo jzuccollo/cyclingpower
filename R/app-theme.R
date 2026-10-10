@@ -7,15 +7,13 @@
 REPLICATE_CHOICES <- c(200, 500, 1000, 2000)
 BLOCK_CHOICES <- c(30, 60, 120)
 
-#' Interpretation sits above the thing it explains rather than in a help tab,
-#' because the whole point of the package is that these displays are easy to
-#' read the wrong way.
+#' Interpretation sits above the thing it explains rather than in a help tab:
+#' these displays are easy to read the wrong way.
 #' @noRd
 guidance <- function(...) shiny::div(class = "guidance", shiny::p(...))
 
 #' One sentence of orientation stays on the page; the rest folds away. Prose
-#' that is always open and never changes stops being read, and a caveat nobody
-#' reads is not a caveat.
+#' that is always open and never changes stops being read.
 #' @noRd
 details <- function(title, ...) {
   bslib::accordion(
@@ -83,7 +81,7 @@ app_theme <- function() {
     # No double quotes anywhere in this block. It is a plain R string, so one
     # inside a CSS comment closes it, and the app then dies at source time with
     # a missing-comma error several hundred lines away from the cause.
-    # parse(inst/shiny/app.R) catches it in a second.
+    # parse("R/app-theme.R") catches it in a second.
     bslib::bs_add_rules(
       "
       /* page_navbar routes through page_fillable whenever it carries a sidebar,

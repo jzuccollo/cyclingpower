@@ -41,22 +41,22 @@ meter wrongly passes exactly as a correct one does.
 \code{\link[=agreement_by_level]{agreement_by_level()}} only has a band if you spent time in it.
 \item The ladder \strong{runs up and then back down} because a meter reading high
 through warming up gives different numbers at the same target on the way
-down, where a genuinely level-dependent meter repeats itself. Ridden one
-way only, \code{\link[=level_dependence]{level_dependence()}} cannot separate them.
+down, where a level-dependent meter repeats itself. Ridden one way only,
+\code{\link[=level_dependence]{level_dependence()}} cannot separate them.
 }
 
 \code{mode} is \code{"erg"} where the trainer holds the target and \code{"free"} where it
 must not: a trainer in erg fights a surge and rounds off the very edge the
 sync block exists to provide.
 
-There is one sync block, at the front, and deliberately no second one at the
-end. A closing block would only detect a clock drifting during the ride, and
-when the app records there is one clock stamping every meter — it cannot
-drift relative to itself, so the block would cost the best part of two
-minutes to rule out something that cannot happen. Independent head units are
-a different case, where two clocks genuinely can separate; that route is
-prose in \code{vignette("recording_rides")} rather than this function, and it
-should repeat the surges at the end.
+There is one sync block, at the front, and no second one at the end. A
+closing block would only detect a clock drifting during the ride, and when
+the app records there is one clock stamping every meter — it cannot drift
+relative to itself, so the block would cost the best part of two minutes to
+rule out something that cannot happen. Independent head units are a different
+case, where two clocks can separate; that route is prose in
+\code{vignette("recording_rides")} rather than this function, and it should repeat
+the surges at the end.
 }
 \examples{
 comparison_protocol()

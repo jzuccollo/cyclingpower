@@ -30,16 +30,15 @@ second-by-second series that would produce the numbers you name.
 \details{
 The problem is wildly underdetermined — thousands of seconds, two
 constraints — so the shape has to come from somewhere. Here it comes from an
-autocorrelated process, which is what riding actually looks like: you hold a
-power for minutes at a time rather than jumping about at random. That matters
-because normalised power is defined on a thirty-second rolling mean, and
-second-by-second noise averages away inside that window. A series of
-independent draws has a variability index of essentially 1 no matter how wide
-its spread, so noise alone cannot produce a normalised power above the
-average.
+autocorrelated process, which is what riding looks like: you hold a power for
+minutes at a time rather than jumping about at random. Normalised power is
+defined on a thirty-second rolling mean, and second-by-second noise averages
+away inside that window, so a series of independent draws has a variability
+index of 1 no matter how wide its spread and noise alone cannot produce a
+normalised power above the average.
 
-Scale and shape are then solved separately, which is what makes this exact
-and quick. Both metrics scale linearly with power, so their ratio does not
+Scale and shape are then solved separately, which is what makes both targets
+exact. Both metrics scale linearly with power, so their ratio does not
 depend on the overall level: raising the series to a power sets the
 variability index, and multiplying through afterwards sets the average
 without disturbing it. That leaves one monotone equation in one unknown
@@ -57,9 +56,9 @@ are asking for before reading anything into the shape that comes back.
 Within a feasible intensity the shape holds up, but its upper tail is
 lognormal and widens with the variability index, so a ragged ride posts
 sustained peaks — the best thirty seconds, not the peak second — beyond what
-the same ride's five-minute best implies. Treat a high variability index as
-the place where the series stops being a plausible ride and starts being
-merely a series with the right two numbers.
+the same ride's five-minute best implies. At a high variability index the
+series stops being a plausible ride and is only a series with the right two
+numbers.
 }
 
 \examples{

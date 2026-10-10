@@ -98,7 +98,7 @@ The same bands are shown twice. In watts, a meter that is a constant
 percentage out reads further from its partner the harder you ride, so the line
 rises even though nothing about the meter changes; in per cent that same meter
 is flat. A line that is level in watts and tilts in per cent, or tilts in both,
-is a meter whose error genuinely depends on how hard you were riding.
+is a meter whose error depends on how hard you were riding.
 
 ```{r by-level-watts}
 plot_by_level(results$by_level)

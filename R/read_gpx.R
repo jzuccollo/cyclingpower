@@ -16,10 +16,9 @@ gpx_field_names <- function() {
   )
 }
 
-#' Matching on local name rather than namespace prefix is what makes this
-#' robust to who wrote the file. Prefixes are arbitrary and the URIs differ
-#' across GPX versions and Garmin's several extension schemas, so keying on
-#' them means an unexpected namespace silently yields nothing.
+#' Matched on local name, not namespace prefix. Prefixes are arbitrary and the
+#' URIs differ across GPX versions and Garmin's several extension schemas, so
+#' keying on them means an unexpected namespace silently yields nothing.
 #' @noRd
 local_name_xpath <- function(names) {
   paste0(

@@ -53,7 +53,7 @@ any drift in B between rides transfers directly onto the A-to-C comparison
 and nothing in the ride files distinguishes that from a real difference.
 What can be checked is reported by \code{\link[=chain_report]{chain_report()}} — whether the two runs
 covered comparable power, since gains compared over different parts of the
-range are not really comparable at all.
+range are not comparable.
 }
 \examples{
 # The demo has assioma in both runs, so it bridges kickr to quarq

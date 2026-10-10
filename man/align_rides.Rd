@@ -33,8 +33,8 @@ the spread, shifts the bias, and looks entirely plausible on the way out.
 Within each run every source is resampled onto a one-second grid, then the
 offset against a reference source is estimated by maximising the
 cross-correlation of the power series. Where both channels came from a
-single head unit the estimate is simply zero, so the same path serves both
-cases. Gaps left by pauses or smart recording stay \code{NA} rather than being
+single head unit the estimate is zero, so the same path serves both cases.
+Gaps left by pauses or smart recording stay \code{NA} rather than being
 interpolated across.
 }
 \examples{

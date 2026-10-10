@@ -1,9 +1,9 @@
 #' The app's interface
 #'
 #' One function per tab, assembled here. The tabs run in the order the work
-#' happens, and every input id is unqualified on purpose: record.js addresses
-#' #pair_meter and #stop_record directly, so a shiny module namespace would
-#' silently break pairing and the ordered stop.
+#' happens, and every input id is unqualified: record.js addresses #pair_meter
+#' and #stop_record directly, so a shiny module namespace would silently break
+#' pairing and the ordered stop.
 #' @noRd
 app_ui <- function() {
   bslib::page_navbar(
@@ -295,9 +295,9 @@ ui_record <- function() {
             "rather than a default."
           ),
           shiny::p(
-            shiny::tags$b("The ladder runs up and then down deliberately. "),
+            shiny::tags$b("The ladder runs up and then back down. "),
             "A meter reading high because it has warmed up gives different ",
-            "numbers at the same target on the way down; a genuinely ",
+            "numbers at the same target on the way down; a ",
             "level-dependent one repeats itself. Ridden in one direction only ",
             "the two are indistinguishable, and ",
             shiny::tags$code("level_dependence()"),
@@ -598,8 +598,8 @@ ui_levels <- function() {
       "bias near zero and still be wrong everywhere."
     ),
     # Two views of one computation rather than a toggle: a constant percentage
-    # error is a rising line in watts and a flat line in per cent, and being
-    # able to put the two side by side is the point of showing both.
+    # error is a rising line in watts and a flat line in per cent, so the two
+    # have to be readable side by side.
     bslib::navset_card_tab(
       full_screen = TRUE,
       title = "Across the power range",
@@ -631,8 +631,8 @@ ui_levels <- function() {
         "A meter that is a constant percentage out reads further from its ",
         "partner the harder you ride, so its line rises in watts while ",
         "nothing about the meter has changed. The per-cent panel is flat for ",
-        "that meter and tilts only for one whose error genuinely depends on ",
-        "how hard you were riding."
+        "that meter and tilts only for one whose error depends on how hard ",
+        "you were riding."
       )
     )
   )

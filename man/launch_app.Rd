@@ -20,9 +20,9 @@ point it at a directory of ride files, correct the run and source labels if
 the filenames do not carry them, and read the results with the settings live.
 }
 \details{
-The report is still the thing to keep — it is a file you can send or come
-back to — and the app's download button renders it from the results already
-on screen, so the two cannot disagree.
+The report is the thing to keep, being a file you can send or come back to.
+The app's download button renders it from the results already on screen, so
+the two cannot disagree.
 }
 \examples{
 \dontrun{
