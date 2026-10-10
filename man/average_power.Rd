@@ -15,15 +15,14 @@ Average power in watts.
 \description{
 The mean over the whole recording, counting coasting as zero, which is what
 variability index and training stress score are defined against. For the
-average of the seconds actually spent pedalling, compose with
-\code{\link[=drop_zeros]{drop_zeros()}}.
+average of the seconds actually spent pedalling, drop the coasting yourself
+first: \code{average_power(x[x != 0])}.
 }
 \examples{
 average_power(c(rep(200, 1800), rep(0, 1800)))
 }
 \seealso{
 Other metrics:
-\code{\link[=drop_zeros]{drop_zeros()}},
 \code{\link[=intensity_factor]{intensity_factor()}},
 \code{\link[=normalised_power]{normalised_power()}},
 \code{\link[=tss]{tss()}},

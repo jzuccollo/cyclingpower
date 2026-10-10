@@ -4,14 +4,14 @@
 \alias{intensity_factor}
 \title{Intensity factor}
 \usage{
-intensity_factor(power, ftp = 250)
+intensity_factor(power, ftp)
 }
 \arguments{
 \item{power}{Numeric vector of per-second power in watts.}
 
-\item{ftp}{Functional threshold power in watts. The default is the
-package's reference rider and is almost certainly not you: set your own
-for a number that means anything.}
+\item{ftp}{Functional threshold power in watts. No default: a number
+computed against somebody else's threshold looks exactly like a number
+computed against yours.}
 }
 \value{
 Intensity factor, where 1 is riding at threshold.
@@ -25,7 +25,6 @@ intensity_factor(rep(210, 600), ftp = 250)
 \seealso{
 Other metrics:
 \code{\link[=average_power]{average_power()}},
-\code{\link[=drop_zeros]{drop_zeros()}},
 \code{\link[=normalised_power]{normalised_power()}},
 \code{\link[=tss]{tss()}},
 \code{\link[=variability_index]{variability_index()}}

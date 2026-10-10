@@ -22,7 +22,8 @@ Follows Coggan's definition: the rolling mean runs over the whole recording
 with coasting included and counted as zero, and trails rather than centres,
 so the first value falls at the thirty-second mark. A recording shorter than
 the window has no normalised power and returns \code{NA}. For a value over the
-seconds actually spent pedalling, compose with \code{\link[=drop_zeros]{drop_zeros()}}.
+seconds actually spent pedalling, drop the coasting yourself first:
+\code{normalised_power(x[x != 0])}.
 }
 \examples{
 normalised_power(rep(250, 600))
@@ -30,7 +31,6 @@ normalised_power(rep(250, 600))
 \seealso{
 Other metrics:
 \code{\link[=average_power]{average_power()}},
-\code{\link[=drop_zeros]{drop_zeros()}},
 \code{\link[=intensity_factor]{intensity_factor()}},
 \code{\link[=tss]{tss()}},
 \code{\link[=variability_index]{variability_index()}}

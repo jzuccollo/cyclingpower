@@ -11,6 +11,16 @@ The release that makes the package installable by someone who did not write it.
   metrics are exported and compose with `dplyr::summarise()`:
   `summarise(rides, np = normalised_power(power), .by = source)`.
 
+* `drop_zeros()` is removed. It was `power[power != 0]` behind an export, and
+  nothing in the package, the app, the report template or the vignettes called
+  it. Where you want a metric over pedalling seconds only, subset first:
+  `average_power(x[x != 0])`.
+
+* `intensity_factor()` and `tss()` require `ftp` again; the `250` default
+  introduced during this cycle is gone. A score computed against somebody
+  else's threshold is indistinguishable from one computed against yours, which
+  is the same objection that removed `skim_power_data()`.
+
 * `start_recording()`, `record_samples()`, `stop_recording()` and
   `render_comparison()` are no longer exported. They were public only so that
   the Shiny app, which lived in `inst/`, could reach them; it now lives in `R/`

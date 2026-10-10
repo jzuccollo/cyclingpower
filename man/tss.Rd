@@ -4,14 +4,14 @@
 \alias{tss}
 \title{Training stress score}
 \usage{
-tss(power, ftp = 250)
+tss(power, ftp)
 }
 \arguments{
 \item{power}{Numeric vector of per-second power in watts.}
 
-\item{ftp}{Functional threshold power in watts. The default is the
-package's reference rider and is almost certainly not you: set your own
-for a number that means anything.}
+\item{ftp}{Functional threshold power in watts. No default: a number
+computed against somebody else's threshold looks exactly like a number
+computed against yours.}
 }
 \value{
 Training stress score.
@@ -27,7 +27,6 @@ tss(rep(250, 3600), ftp = 250)
 \seealso{
 Other metrics:
 \code{\link[=average_power]{average_power()}},
-\code{\link[=drop_zeros]{drop_zeros()}},
 \code{\link[=intensity_factor]{intensity_factor()}},
 \code{\link[=normalised_power]{normalised_power()}},
 \code{\link[=variability_index]{variability_index()}}

@@ -22,7 +22,6 @@ variability_index(rep(250, 600))
 \seealso{
 Other metrics:
 \code{\link[=average_power]{average_power()}},
-\code{\link[=drop_zeros]{drop_zeros()}},
 \code{\link[=intensity_factor]{intensity_factor()}},
 \code{\link[=normalised_power]{normalised_power()}},
 \code{\link[=tss]{tss()}}
