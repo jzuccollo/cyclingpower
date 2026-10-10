@@ -673,9 +673,8 @@ app_server <- function(input, output, session) {
       class = "small text-body-secondary border-top pt-2 mt-2",
       sprintf(
         paste(
-          "Intervals are 95%% from %s moving-block bootstrap replicates over",
-          "%s-second blocks, seed %s. Seconds below %s W dropped, and",
-          "coasting always."
+          "95%% intervals from %s moving-block bootstrap replicates, %s-second",
+          "blocks, seed %s. Seconds below %s W and coasting dropped."
         ),
         s$replicates,
         s$block,
@@ -777,11 +776,11 @@ app_server <- function(input, output, session) {
       class = "alert alert-warning",
       shiny::strong("Alignment incomplete. "),
       paste0(
-        "No clock offset could be established for ",
+        "No clock offset found for ",
         paste(unresolved, collapse = ", "),
-        ", so the recorded timestamps stand. Expected for a steady effort ",
-        "with no features to lock onto; a low correlation instead suggests ",
-        "these are not recordings of the same ride."
+        ", so the recorded timestamps stand. A steady effort gives the ",
+        "correlation nothing to lock onto. A low correlation suggests these ",
+        "are different rides."
       )
     )
   })
@@ -1139,9 +1138,9 @@ app_server <- function(input, output, session) {
         shiny::p(
           class = "small mb-0",
           if (boxed) {
-            "Those two intervals do not overlap: the average is not a good summary of this pair."
+            "The two intervals do not overlap, so one average misdescribes this pair."
           } else {
-            "Those two intervals overlap, so the range does not establish a changing error."
+            "The two intervals overlap, so the data do not show a changing error."
           }
         ),
         theme = bslib::value_box_theme(
@@ -1169,7 +1168,7 @@ app_server <- function(input, output, session) {
 
     shiny::div(
       class = "alert alert-warning",
-      shiny::strong("The error is not constant across the range. "),
+      shiny::strong("The gain changes across the range. "),
       lapply(seq_len(nrow(uneven)), function(i) {
         r <- uneven[i, ]
         shiny::p(
@@ -1177,8 +1176,8 @@ app_server <- function(input, output, session) {
           sprintf(
             paste(
               "%s against %s in %s runs from %+.1f%% at %s to %+.1f%% at %s,",
-              "and those two intervals do not overlap. The single average on",
-              "the Agreement tab is not a good summary of this pair."
+              "and the intervals do not overlap. The Agreement tab's single",
+              "average does not describe this pair."
             ),
             r$source_a,
             r$source_b,
@@ -1202,6 +1201,9 @@ app_server <- function(input, output, session) {
     block <- settings()$block
     thin <- band$seconds < 2 * block
     dropped <- attr(by_level(), "dropped_seconds")
+    if (is.null(dropped)) {
+      dropped <- 0
+    }
 
     if (!any(thin)) {
       return(NULL)
@@ -1213,15 +1215,14 @@ app_server <- function(input, output, session) {
       shiny::strong("Some bands are thinner than the bootstrap block. "),
       sprintf(
         paste(
-          "%s of %s bands hold fewer than %s seconds, so their blocks were",
-          "shortened to a quarter of the band rather than the %s seconds",
-          "asked for. The thinnest is %s with %s seconds, whose blocks were",
-          "%s seconds. A further %s seconds fell in bands too thin to show at all."
+          "%s of %s bands hold fewer than %s seconds, so their blocks were cut",
+          "to a quarter of the band. The thinnest, %s, has %s seconds and",
+          "%s-second blocks. A further %s seconds fell in bands too thin to",
+          "show."
         ),
         sum(thin),
         nrow(band),
         2 * block,
-        block,
         band$band_range[at],
         band$seconds[at],
         max(1, floor(band$seconds[at] / 4)),
@@ -1329,9 +1330,8 @@ app_server <- function(input, output, session) {
       result$chain$assumption,
       sprintf(
         paste(
-          " The runs overlap over %s%% of the power range they cover between",
-          "them; gains compared over different parts of the range are not",
-          "really comparable."
+          " The runs overlap over %s%% of the power range; gains over",
+          "different parts of the range are not comparable."
         ),
         overlap
       )
@@ -1507,23 +1507,23 @@ app_server <- function(input, output, session) {
     shiny::tagList(
       shiny::tags$dl(
         class = "row small mb-3",
-        shiny::tags$dt(class = "col-7", "Minimum power"),
-        shiny::tags$dd(class = "col-5", paste(s$min_power, "W")),
-        shiny::tags$dt(class = "col-7", "Band width"),
-        shiny::tags$dd(class = "col-5", paste(l$width, "W")),
-        shiny::tags$dt(class = "col-7", "Minimum seconds per band"),
-        shiny::tags$dd(class = "col-5", l$min_seconds),
-        shiny::tags$dt(class = "col-7", "Largest offset considered"),
-        shiny::tags$dd(class = "col-5", paste(s$max_offset, "s")),
-        shiny::tags$dt(class = "col-7", "Trace smoothing"),
-        shiny::tags$dd(class = "col-5", paste(s$smooth, "s")),
-        shiny::tags$dt(class = "col-7", "Bootstrap"),
+        shiny::tags$dt(class = "col-8", "Minimum power"),
+        shiny::tags$dd(class = "col-4", paste(s$min_power, "W")),
+        shiny::tags$dt(class = "col-8", "Band width"),
+        shiny::tags$dd(class = "col-4", paste(l$width, "W")),
+        shiny::tags$dt(class = "col-8", "Minimum seconds per band"),
+        shiny::tags$dd(class = "col-4", l$min_seconds),
+        shiny::tags$dt(class = "col-8", "Largest offset considered"),
+        shiny::tags$dd(class = "col-4", paste(s$max_offset, "s")),
+        shiny::tags$dt(class = "col-8", "Trace smoothing"),
+        shiny::tags$dd(class = "col-4", paste(s$smooth, "s")),
+        shiny::tags$dt(class = "col-8", "Bootstrap"),
         shiny::tags$dd(
-          class = "col-5",
+          class = "col-4",
           sprintf("%s x %ss", s$replicates, s$block)
         ),
-        shiny::tags$dt(class = "col-7", "Seed"),
-        shiny::tags$dd(class = "col-5", s$seed)
+        shiny::tags$dt(class = "col-8", "Seed"),
+        shiny::tags$dd(class = "col-4", s$seed)
       ),
       shiny::p(class = "small text-body-secondary mb-1", "Files"),
       shiny::tags$ul(

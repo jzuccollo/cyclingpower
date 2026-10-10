@@ -183,7 +183,6 @@ app_theme <- function() {
         gap: 0.5rem;
         align-items: center;
       }
-      .actions .btn { min-width: 11rem; }
       /* shinyDirButton and input_task_button both emit a bare button, so the
          form-group margin that lines up textInput has to be added by hand. */
       .actions-inline .btn { margin-bottom: 1rem; }
@@ -246,7 +245,7 @@ app_theme <- function() {
 
       /* A chained row rests on an assumption the data cannot test, and unmarked
          it reads exactly as authoritative as the rows above it. */
-      tr.chained td { background: #fdf8ef; }
+      tr.chained td, tr.chained:hover td { background: #fdf8ef; }
       .badge-chained {
         background: #f3e6cd;
         color: #7c4a02;
@@ -272,8 +271,28 @@ app_theme <- function() {
       .dataTables_wrapper { overflow-x: auto; }
 
       /* Alerts read as notes rather than as warnings shouted at you. */
-      .alert { border: 1px solid; border-left-width: 3px; }
+      .alert {
+        border: 1px solid;
+        border-left-width: 3px;
+        border-radius: 0.25rem;
+        padding: 0.6rem 0.9rem;
+        font-size: 0.95rem;
+      }
+      .alert-warning {
+        background: #fdf5e6;
+        border-color: #b45309;
+        color: #44403c;
+      }
+      .bslib-value-box .value-box-value {
+        font-size: 1.9rem;
+        font-weight: 600;
+        font-variant-numeric: tabular-nums;
+      }
 
+      "
+    ) |>
+    bslib::bs_add_rules(
+      "
       /* Recording. The chips and the canvas are painted by record.js rather than
          rendered by R, so their styling lives here and not in an inline style
          attribute the JavaScript would have to carry. */

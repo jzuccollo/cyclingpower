@@ -51,8 +51,8 @@ app_ui <- function() {
       sidebar_heading("Comparison", "Agreement, By level and the report."),
       shiny::sliderInput("min_power", "Minimum power (W)", 0, 400, 0, step = 5),
       shiny::helpText(
-        "Seconds where either meter reads below this are dropped. Coasting is ",
-        "always dropped: two meters both reading zero agree trivially."
+        "Drops seconds where either meter reads below this. Coasting is always ",
+        "dropped, since two zeros agree trivially."
       ),
       shiny::selectInput(
         "block",
@@ -73,9 +73,8 @@ app_ui <- function() {
         class = "btn-sm btn-outline-secondary"
       ),
       shiny::helpText(
-        "Intervals are resampled, so they move a little each time. If a ",
-        "conclusion changes when you reseed, there are too few replicates ",
-        "behind it."
+        "Intervals are resampled and move slightly between runs. If a ",
+        "conclusion flips on reseeding, use more replicates."
       ),
 
       shiny::hr(),
@@ -314,13 +313,11 @@ ui_rides <- function() {
         "Choose a folder"
       ),
       guidance(
-        "The unit of analysis is a run: one session, ridden once, recorded by ",
-        "two or more meters. Files named ",
-        shiny::tags$code("<run><sep><source>"),
-        " label themselves \u2014 ",
+        "A run is one session recorded by two or more meters. Name files ",
+        shiny::tags$code("<run>_<source>"),
+        ", such as ",
         shiny::tags$code("run1_kickr.fit"),
-        " is the kickr's recording of run one. Anything else you label by ",
-        "hand at step 2."
+        ", and they label themselves. Label anything else at step 2."
       ),
       shiny::div(
         class = "d-flex gap-2 align-items-end flex-wrap actions-inline",
@@ -342,17 +339,15 @@ ui_rides <- function() {
         )
       ),
       shiny::helpText(
-        "Browsing lists the folder straight away; typing a path needs the ",
-        "button. Listing only reads the filenames \u2014 nothing is opened until ",
-        "step 2."
+        "Browsing lists the folder at once. A typed path needs the button. ",
+        "Nothing is opened until step 2."
       ),
       shiny::uiOutput("scan_status"),
       shiny::div(
         class = "mt-3 pt-3 border-top",
         shiny::p(
           class = "small text-body-secondary mb-2",
-          "No rides of your own to hand? The demo builds three simulated ",
-          "meters with known faults and loads them in one press."
+          "No rides to hand? Load three simulated meters with known faults."
         ),
         shiny::div(
           class = "actions",
@@ -371,12 +366,9 @@ ui_rides <- function() {
         "Check the labels, then load"
       ),
       guidance(
-        "These are the files found in the folder, not yet the data: nothing ",
-        "has been read from disk. Correct anything mislabelled, drop what ",
-        "does not belong, and load. Two files must never carry the same run ",
-        "and source \u2014 they would be averaged into a single meter with nothing ",
-        "in the output to say it had happened, so that combination is refused ",
-        "rather than warned about."
+        "Fix any wrong labels, remove files that do not belong, then load. Two ",
+        "files with the same run and source are refused, because they would be ",
+        "averaged into one meter without warning."
       ),
       shiny::uiOutput("demo_note"),
       shiny::uiOutput("spec_issues"),
@@ -400,19 +392,19 @@ ui_rides <- function() {
           shiny::p(
             class = "small text-body-secondary mb-3",
             style = "max-width: 52ch;",
-            "The character between run and source in the filenames: the ",
+            "The character that splits a filename into run and source, the ",
             shiny::tags$code("_"),
-            " of ",
+            " in ",
             shiny::tags$code("run1_kickr.fit"),
-            ". Change it and the two columns are read again."
+            ". Changing it re-reads both columns."
           )
         ),
         shiny::p(
           class = "small text-body-secondary mb-2",
           style = "max-width: 68ch;",
-          "Double-click a run or source cell to edit it. Select rows and use ",
-          "Remove selected to leave a file out of the comparison entirely. ",
-          "Listing the folder again replaces the table, discarding these edits."
+          "Double-click a run or source to edit it. Select rows and press ",
+          "Remove selected to leave files out. Listing the folder again ",
+          "discards edits."
         ),
         DT::DTOutput("spec"),
         shiny::div(
@@ -448,9 +440,8 @@ ui_alignment <- function() {
       bslib::card_header("Power traces"),
       full_screen = TRUE,
       guidance(
-        "The visual check that these are recordings of the same ride: traces ",
-        "should track each other's shape, whatever vertical gap sits between ",
-        "them."
+        "Traces from the same ride should share a shape, even with a vertical ",
+        "gap between them."
       ),
       shiny::plotOutput("timeseries", height = "auto")
     ),
@@ -461,12 +452,11 @@ ui_alignment <- function() {
     details(
       "How the offsets were found",
       shiny::p(
-        "Two meters recording the same ride do not necessarily agree about ",
-        "what time it is, and differencing on nominal timestamps then ",
-        "compares power from one moment against power from another. That ",
-        "inflates the spread and shifts the bias, and the result looks ",
-        "entirely plausible on the way out. Each source is matched against a ",
-        "reference by cross-correlating the power traces."
+        "Two meters on the same ride can disagree about the time. Differencing ",
+        "on their timestamps then compares power from different moments, which ",
+        "inflates the spread and shifts the bias while the result still looks ",
+        "plausible. Each source is matched against a reference by ",
+        "cross-correlating the power traces."
       ),
       shiny::p(
         shiny::tags$code("offset"),
@@ -485,7 +475,7 @@ ui_alignment <- function() {
         "itself, and ",
         shiny::tags$code("unresolved"),
         " when the data could not ",
-        "settle it \u2014 in which case the recorded timestamps stand."
+        "settle it, and the recorded timestamps stand."
       )
     )
   )
@@ -509,11 +499,10 @@ ui_agreement <- function() {
       bslib::card_header("Bland-Altman"),
       full_screen = TRUE,
       guidance(
-        "Each cell counts the seconds spent there: the two meters' mean ",
-        "across, their difference up. Flat above or below zero is a ",
-        "constant offset; a tilt means the gap changes with effort. Only ",
-        "pairs that rode together appear here, because a chained ",
-        "comparison has no shared seconds to plot."
+        "Each cell counts seconds: mean of the two meters across, difference ",
+        "up. A flat cloud above or below zero is a constant offset; a tilt ",
+        "means the gap changes with effort. Chained pairs have no shared ",
+        "seconds, so they do not appear."
       ),
       shiny::uiOutput("bridge_ui"),
       shiny::plotOutput("agreement_plot", height = "auto")
@@ -521,12 +510,11 @@ ui_agreement <- function() {
     details(
       "How to read these numbers",
       shiny::p(
-        "Gain is the difference as a percentage, which is usually the more ",
-        "natural way to read a meter, since meters tend to be a few per cent ",
-        "out rather than a fixed number of watts out. The limits of ",
-        "agreement bound the range within which most individual seconds ",
-        "fall \u2014 they describe the scatter, not the uncertainty in the ",
-        "average, which is what the interval beside each estimate gives."
+        "Gain is the difference as a percentage, because meters are usually ",
+        "out by a few per cent, not a fixed number of watts. The limits of ",
+        "agreement bound where most individual seconds fall. They describe ",
+        "scatter. The interval beside each estimate gives the uncertainty in ",
+        "the average."
       ),
       shiny::p(
         shiny::tags$b("Where each number came from. "),
@@ -552,7 +540,7 @@ ui_agreement <- function() {
       ),
       shiny::p(
         "A cloud fanning out to the right on the Bland-Altman plot is ",
-        "ordinary \u2014 a fixed percentage error is more watts at more watts."
+        "ordinary: a fixed percentage error is more watts at more watts."
       )
     )
   )
@@ -566,10 +554,8 @@ ui_levels <- function() {
     shiny::uiOutput("level_alert"),
     shiny::uiOutput("thin_alert"),
     guidance(
-      "A single average hides the pattern that usually matters: meters that ",
-      "agree at endurance pace and drift at threshold. A meter reading high ",
-      "in one half of the range and low in the other can post an overall ",
-      "bias near zero and still be wrong everywhere."
+      "One average can hide a meter that agrees at endurance pace and drifts ",
+      "at threshold."
     ),
     # Two views of one computation rather than a toggle: a constant percentage
     # error is a rising line in watts and a flat line in per cent, so the two
@@ -621,9 +607,8 @@ ui_report <- function() {
       bslib::card(
         bslib::card_header("Save what is on screen"),
         guidance(
-          "Renders the results shown in the other tabs to a standalone HTML ",
-          "file, with the same explanation alongside them. Nothing is ",
-          "recomputed, so the document cannot disagree with the screen."
+          "Renders the results from the other tabs to a standalone HTML file. ",
+          "Nothing is recomputed."
         ),
         shiny::uiOutput("report_ui")
       ),
