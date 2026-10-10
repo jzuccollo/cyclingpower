@@ -370,10 +370,8 @@ app_server <- function(input, output, session) {
     shiny::div(
       class = "alert alert-danger",
       shiny::strong("This browser cannot record. "),
-      "Recording needs Web Bluetooth, which Chrome and Edge have and Safari ",
-      "and Firefox do not \u2014 WebKit has never shipped it and Mozilla declined ",
-      "the specification. Open the app in Chrome to record, or record on head ",
-      "units as before and scan the files on the Rides tab."
+      "Web Bluetooth works in Chrome and Edge. Open the app there, or load ",
+      "files from your head units on the Rides tab."
     )
   })
 
@@ -568,6 +566,12 @@ app_server <- function(input, output, session) {
     }
   })
 
+  # None of the analysis settings affect recording, so the Record tab gets the
+  # width.
+  shiny::observeEvent(input$nav, {
+    bslib::toggle_sidebar("settings", open = !identical(input$nav, "Record"))
+  })
+
   output$record_status <- shiny::renderUI({
     if (!is.null(record_error())) {
       return(shiny::div(class = "alert alert-danger", record_error()))
@@ -591,22 +595,17 @@ app_server <- function(input, output, session) {
         shiny::div(
           class = "alert alert-success py-2",
           shiny::strong("Recording. "),
-          sprintf(
-            "%s written to %s.",
-            paste(
-              sprintf("%s: %s rows", open$sources, open$rows),
-              collapse = ", "
-            ),
-            open$dir
+          paste(
+            sprintf("%s: %s rows", open$sources, open$rows),
+            collapse = ", "
           )
         ),
         if (length(adrift) > 0) {
           shiny::div(
             class = "alert alert-warning py-2 mb-0",
-            shiny::strong("A meter has gone. "),
-            "Its file will have a gap over the seconds it missed, which is ",
-            "what it should have: those seconds are absent from the ",
-            "comparison rather than counted as two meters agreeing on zero."
+            shiny::strong("A meter has dropped out. "),
+            "Those seconds stay blank in its file and are left out of the ",
+            "comparison."
           )
         }
       ))

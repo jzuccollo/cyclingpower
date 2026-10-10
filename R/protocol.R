@@ -105,8 +105,8 @@ comparison_protocol <- function(step_seconds = 120, surges = 4) {
       seconds = 60,
       mode = "free",
       target_pc = 0,
-      cue = "Stop pedalling; marks the halves for the drift check",
-      why = "Exercises the coasting drop, and marks the halves for the drift check"
+      cue = "Stop pedalling",
+      why = "Exercises the coasting drop"
     ),
     step(
       "Ladder down",
@@ -207,7 +207,7 @@ collapse_protocol <- function(protocol, ftp = 250) {
       Duration = paste0(round(sum(protocol$seconds) / 60), " min"),
       Mode = "",
       Target = "",
-      Why = "Ride it identically every time, so a chained comparison can rest on the bridge meter reading the same in both runs"
+      Why = "Ride it the same way every time. Chained comparisons assume the bridge meter reads the same on both days"
     )
   )
 }

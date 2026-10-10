@@ -38,16 +38,14 @@ app_ui <- function() {
     # the downloaded report, which outlives the session, and max_offset
     # invalidates the results on every tab at once.
     sidebar = bslib::sidebar(
+      id = "settings",
       width = 280,
       title = "Analysis settings",
 
       shiny::div(
         class = "sidebar-note",
-        "One set of knobs for the whole app: every number on Alignment, ",
-        "Agreement and By level, and everything in the saved report, is ",
-        "computed with these. Nothing here changes what is recorded or which ",
-        "files are loaded. Start with the defaults, then move one to see ",
-        "whether a conclusion survives the change."
+        "These settings apply to the Alignment, Agreement and By level tabs ",
+        "and the saved report."
       ),
 
       sidebar_heading("Comparison", "Agreement, By level and the report."),
@@ -122,10 +120,8 @@ ui_record <- function() {
   bslib::nav_panel(
     "Record",
     guidance(
-      "Pair each meter to this page once and one clock stamps every sample, so ",
-      "the recordings share a timebase by construction rather than having one ",
-      "recovered from them afterwards. The files land in a directory the Rides ",
-      "tab reads like any other."
+      "Pair each meter, then record. One clock stamps every sample, and the ",
+      "files appear on the Rides tab."
     ),
     shiny::uiOutput("ble_status"),
 
@@ -134,50 +130,65 @@ ui_record <- function() {
     shiny::conditionalPanel(
       condition = "input.ble_supported === true",
 
-      bslib::card(
-        bslib::card_header("The meters"),
-        guidance(
-          "The browser asks which device to use each time and will not open ",
-          "that chooser by itself, so pairing three meters is three presses."
-        ),
+      # Sticky, so the clock, the meters and the controls stay on screen while
+      # the rider scrolls the protocol. The tiles and the clock are painted by
+      # record.js from state it already holds: round-tripping live watts
+      # through R would put the recorder behind the analysis tabs' work.
+      shiny::div(
+        class = "record-bar",
         shiny::div(
-          class = "alert alert-warning",
-          shiny::strong(
-            "A meter can hold one Bluetooth connection at a time. "
-          ),
-          "While this page has the trainer, Zwift and TrainerRoad cannot: ",
-          "pair the training app to it over ANT+ instead. That is also how erg ",
-          "targets have to be commanded during a recording. Check the pairing ",
-          "rather than assume it \u2014 a head unit will often take a trainer over ",
-          "Bluetooth by default and quietly spend the connection this page ",
-          "needs."
-        ),
-        # Wrapped, because a card body is a flex column and a bare button in
-        # one stretches the full width of the card.
-        shiny::div(
-          class = "actions mb-3",
-          shiny::actionButton(
-            "pair_meter",
-            "Pair a meter",
-            class = "btn-primary"
+          class = "record-bar-top",
+          shiny::div(id = "record_clock", class = "record-clock", "0:00"),
+          shiny::div(
+            class = "actions",
+            shiny::actionButton(
+              "pair_meter",
+              "Pair a meter",
+              class = "btn-outline-secondary btn-lg"
+            ),
+            shiny::actionButton(
+              "start_record",
+              "Start recording",
+              class = "btn-success btn-lg"
+            ),
+            shiny::actionButton(
+              "stop_record",
+              "Stop",
+              class = "btn-danger btn-lg"
+            )
           )
         ),
-        # Painted by record.js from the connection state it already holds.
-        # Round-tripping live watts through R to redraw this would put the
-        # recorder's responsiveness behind the analysis tabs' work.
         shiny::div(id = "meter_status"),
-        shiny::uiOutput("meter_labels")
+        shiny::uiOutput("record_status")
+      ),
+
+      shiny::div(
+        class = "alert alert-warning",
+        shiny::strong("Zero-offset every meter "),
+        "after a few minutes of easy pedalling and just before you start. ",
+        "It cannot be done afterwards."
       ),
 
       bslib::card(
-        bslib::card_header("The recording"),
+        bslib::card_header("Live trace"),
+        guidance("The last three minutes. Check that the meters move together."),
+        shiny::tags$canvas(id = "record_trace")
+      ),
+
+      bslib::card(
+        bslib::card_header("Setup"),
         shiny::div(
           class = "alert alert-warning",
-          shiny::strong("Zero-offset every meter now. "),
-          "After a few minutes of easy pedalling and immediately before you ",
-          "start, following each manufacturer's instructions. The whole ",
-          "comparison rests on it, and it cannot be done afterwards."
+          shiny::strong("Each meter takes one Bluetooth connection. "),
+          "Connect your training app to the trainer over ANT+, or this page ",
+          "cannot pair it. Head units often take the trainer over Bluetooth ",
+          "first, so check."
         ),
+        guidance(
+          "Pairing opens a browser chooser each time, so three meters take ",
+          "three presses."
+        ),
+        shiny::uiOutput("meter_labels"),
         shiny::div(
           class = "d-flex gap-2 align-items-end flex-wrap actions-inline",
           shiny::div(
@@ -194,43 +205,18 @@ ui_record <- function() {
           shiny::textInput("record_run", "Run", value = "run1", width = "140px")
         ),
         shiny::helpText(
-          "Files are named ",
+          "Files are saved as ",
           shiny::tags$code("<run>_<source>.csv"),
-          ", which is what the Rides tab parses, so both labels take letters, ",
-          "digits and hyphens only. An existing file is never written over."
-        ),
-        shiny::div(
-          class = "actions mb-3",
-          shiny::actionButton(
-            "start_record",
-            "Start recording",
-            class = "btn-primary"
-          ),
-          shiny::actionButton(
-            "stop_record",
-            "Stop",
-            class = "btn-outline-secondary"
-          )
-        ),
-        shiny::uiOutput("record_status")
-      ),
-
-      bslib::card(
-        bslib::card_header("Live trace"),
-        guidance(
-          "The last three minutes, drawn in the browser from the samples as ",
-          "they arrive. It is a check that the meters are tracking each ",
-          "other's shape, not the analysis \u2014 that comes off the files."
-        ),
-        shiny::tags$canvas(id = "record_trace")
+          ". Use letters, digits and hyphens. Existing files are kept."
+        )
       ),
 
       bslib::card(
         bslib::card_header("What to ride"),
         guidance(
-          "Each block is here for something the analysis needs. Ride the same ",
-          "session every time: a chained comparison rests on the bridge meter ",
-          "reading the same in both runs."
+          "Each block serves the analysis. Ride the same session every time: a ",
+          "chained comparison assumes the bridge meter reads the same in both ",
+          "runs."
         ),
         shiny::tableOutput("protocol_table"),
         shiny::div(
@@ -272,54 +258,42 @@ ui_record <- function() {
         shiny::helpText(
           "A ",
           shiny::tags$code(".zwo"),
-          " writes the surges and coasts as free ride, which drops the trainer ",
-          "out of erg for exactly the blocks that must not be ridden in it. An ",
+          " file sets the surges and coasts to free ride. An ",
           shiny::tags$code(".erg"),
-          " course has no way to say that, so switch out of erg by hand for ",
-          "them. Either way the targets have to be commanded over ANT+: this ",
-          "page holds the trainer's Bluetooth."
+          " file cannot, so leave erg by hand for those blocks. Send the ",
+          "targets over ANT+, because this page holds the trainer's Bluetooth."
         ),
         details(
           "Why these blocks",
           shiny::p(
-            shiny::tags$b("The surges are not there to find the offset. "),
-            "One clock stamping every meter makes it zero by construction. ",
-            "But with no feature to lock onto, ",
+            shiny::tags$b("The surges make a zero offset evidence. "),
+            "One clock stamps every meter, so the offset is zero by ",
+            "construction. ",
             shiny::tags$code("check_alignment()"),
-            " cannot tell that the clocks agree from that the traces cannot ",
-            "be compared at all: it collapses both into ",
+            " reports a flat trace as ",
             shiny::tags$code("unresolved"),
-            ", forces the offset to zero and warns. A recorder that stamped ",
-            "every meter wrongly would pass that check exactly as a correct ",
-            "one does. The surges are what make a resolved zero evidence ",
-            "rather than a default."
+            ", the same as a wrong clock. Only a resolved zero shows the ",
+            "stamps are right."
           ),
           shiny::p(
-            shiny::tags$b("The ladder runs up and then back down. "),
-            "A meter reading high because it has warmed up gives different ",
-            "numbers at the same target on the way down; a ",
-            "level-dependent one repeats itself. Ridden in one direction only ",
-            "the two are indistinguishable, and ",
+            shiny::tags$b("The ladder runs up and back down. "),
+            "A warming meter reads differently at the same target on the way ",
+            "down. A level-dependent one repeats itself. Ridden one way, ",
             shiny::tags$code("level_dependence()"),
-            " would report the drift as an error that depends on power."
+            " cannot tell them apart."
           ),
           shiny::p(
-            shiny::tags$b("Two minutes a step is a floor. "),
-            "What runs out is not seconds but bootstrap blocks. Up and down ",
-            "land in the same bands, so a band carries about twice the step, ",
-            "and at a 60-second block two-minute steps leave it roughly four ",
-            "blocks to resample. Shorter drops under three, and a bootstrap ",
-            "drawing two blocks is not estimating anything. Going the other ",
-            "way to four minutes buys about 17% narrower bands for twice the ",
-            "ladder."
+            shiny::tags$b("Two minutes a step is the floor. "),
+            "Up and down share bands, so a band holds about four 60-second ",
+            "bootstrap blocks. Shorter steps leave fewer than three. Four ",
+            "minutes narrows bands by about 17% for twice the ladder."
           ),
           shiny::p(
-            shiny::tags$b("Erg makes the trainer the controlled variable, "),
-            "holding its own reading at target, so within a step the trainer ",
-            "is nearly flat and almost all the spread comes from the other ",
-            "meter. That biases nothing \u2014 the level is the mean of the two \u2014 ",
-            "but on the By level tab it is the trainer that decides which ",
-            "band a second lands in."
+            shiny::tags$b("Erg makes the trainer the controlled variable. "),
+            "The trainer is nearly flat within a step, so most of the spread ",
+            "comes from the other meter. The level is the mean of the two, so ",
+            "nothing is biased, but the trainer decides which band a second ",
+            "lands in."
           )
         )
       )

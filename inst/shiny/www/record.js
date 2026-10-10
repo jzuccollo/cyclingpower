@@ -215,6 +215,28 @@
 
   // ---- Drawing -----------------------------------------------------------
 
+  var STATE_LABELS = {
+    connecting: 'Connecting…',
+    connected: 'Live',
+    reconnecting: 'Reconnecting…',
+    lost: 'Lost',
+    failed: 'Failed'
+  };
+
+  // Elapsed time on the recording's own clock, shown beside the controls.
+  var startedAt = null;
+
+  function drawClock() {
+    var el = document.getElementById('record_clock');
+    if (!el) return;
+    var total = startedAt === null ? 0 : Math.floor((Date.now() - startedAt) / 1000);
+    var m = Math.floor(total / 60);
+    var s = total % 60;
+    el.textContent = m + ':' + (s < 10 ? '0' : '') + s;
+  }
+
+  setInterval(drawClock, 500);
+
   function drawStatus() {
     var container = document.getElementById('meter_status');
     if (!container) return;
@@ -225,10 +247,7 @@
       var chip = document.createElement('div');
       chip.className = 'meter-chip meter-' + meter.state;
 
-      var dot = document.createElement('span');
-      dot.className = 'meter-dot';
-      dot.style.background = meter.colour;
-      chip.appendChild(dot);
+      chip.style.setProperty('--meter-colour', meter.colour);
 
       var name = document.createElement('span');
       name.className = 'meter-name';
@@ -242,7 +261,7 @@
 
       var state = document.createElement('span');
       state.className = 'meter-state';
-      state.textContent = meter.state;
+      state.textContent = STATE_LABELS[meter.state] || meter.state;
       chip.appendChild(state);
 
       container.appendChild(chip);
@@ -256,7 +275,7 @@
     requestAnimationFrame(drawTrace);
   }
 
-  var AXIS_WIDTH = 34;
+  var AXIS_WIDTH = 42;
   var HEAD_ROOM = 14;
 
   function paintTrace() {
@@ -282,15 +301,15 @@
 
     ctx.strokeStyle = '#e7e5e4';
     ctx.lineWidth = 1;
-    ctx.fillStyle = '#a8a29e';
-    ctx.font = '11px system-ui, sans-serif';
+    ctx.fillStyle = '#57534e';
+    ctx.font = '14px system-ui, sans-serif';
     for (var g = 0; g <= 4; g++) {
       var y = height - plot * (g / 4);
       ctx.beginPath();
       ctx.moveTo(AXIS_WIDTH, y);
       ctx.lineTo(width, y);
       ctx.stroke();
-      ctx.fillText(Math.round((peak * g) / 4), 2, y - 2);
+      ctx.fillText(Math.round((peak * g) / 4), 2, y - 3);
     }
 
     var now = Date.now();
@@ -299,7 +318,7 @@
       var trace = meters[m].trace;
       if (trace.length < 2) continue;
       ctx.strokeStyle = meters[m].colour;
-      ctx.lineWidth = 1.5;
+      ctx.lineWidth = 2.5;
       ctx.beginPath();
       for (var k = 0; k < trace.length; k++) {
         var x =
@@ -341,6 +360,7 @@
         recording = false;
         flush();
         releaseScreen();
+        startedAt = null;
       }
     },
     true
@@ -360,6 +380,7 @@
       pending = [];
       batch = 0;
       recording = true;
+      startedAt = Date.now();
       holdScreen();
       drawStatus();
     });
@@ -372,6 +393,7 @@
       recording = false;
       flush();
       releaseScreen();
+      startedAt = null;
       drawStatus();
     });
 

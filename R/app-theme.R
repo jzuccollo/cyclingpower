@@ -156,20 +156,18 @@ app_theme <- function() {
          vertically and costs 470px of page before any content. */
 
       .sidebar-heading {
-        font-size: 0.78rem;
-        font-weight: 700;
-        letter-spacing: 0.06em;
-        text-transform: uppercase;
-        color: #78716c;
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: #44403c;
         margin-bottom: 0.35rem;
         padding-bottom: 0.3rem;
         border-bottom: 1px solid #e7e5e4;
       }
       .sidebar .form-label { margin-bottom: 0.15rem; }
       .sidebar-note {
-        font-size: 0.82rem;
+        font-size: 0.9rem;
         line-height: 1.5;
-        color: #78716c;
+        color: #57534e;
         margin-bottom: 0.75rem;
       }
       /* One width for every button in the sidebar. Three buttons at three
@@ -279,41 +277,60 @@ app_theme <- function() {
       /* Recording. The chips and the canvas are painted by record.js rather than
          rendered by R, so their styling lives here and not in an inline style
          attribute the JavaScript would have to carry. */
+      /* Sticky, so the clock, the meters and the controls stay on screen while
+         the protocol scrolls underneath. */
+      .record-bar {
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        background: #f5f4f2;
+        padding: 0.75rem 0;
+        margin-bottom: 0.75rem;
+        border-bottom: 1px solid #e7e5e4;
+      }
+      .record-bar-top {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.75rem 1.5rem;
+        margin-bottom: 0.75rem;
+      }
+      .record-bar .btn { min-width: 9rem; min-height: 3.5rem; }
+      .record-clock {
+        font-size: 3rem;
+        font-weight: 600;
+        line-height: 1;
+        font-variant-numeric: tabular-nums;
+      }
       #meter_status {
         display: flex;
         flex-wrap: wrap;
-        gap: 0.5rem;
-        margin-bottom: 0.75rem;
+        gap: 0.75rem;
         min-height: 2rem;
       }
       .meter-chip {
-        display: flex;
+        flex: 1 1 14rem;
+        display: grid;
+        grid-template-columns: 1fr auto;
         align-items: baseline;
-        gap: 0.5rem;
+        column-gap: 0.75rem;
         border: 1px solid #e7e5e4;
+        border-left: 6px solid var(--meter-colour, #a8a29e);
         border-radius: 0.4rem;
         background: #ffffff;
-        padding: 0.35rem 0.6rem;
-        font-size: 0.9rem;
+        padding: 0.5rem 0.9rem;
       }
-      .meter-dot {
-        width: 0.6rem;
-        height: 0.6rem;
-        border-radius: 50%;
-        align-self: center;
-      }
-      .meter-name { font-weight: 600; }
+      .meter-name { font-size: 1.1rem; font-weight: 600; }
       .meter-watts {
+        grid-row: span 2;
+        font-size: 3rem;
+        font-weight: 700;
+        line-height: 1;
         font-variant-numeric: tabular-nums;
-        min-width: 4.5rem;
         text-align: right;
       }
-      .meter-state {
-        font-size: 0.78rem;
-        text-transform: uppercase;
-        letter-spacing: 0.04em;
-        color: #78716c;
-      }
+      .meter-state { font-size: 1rem; color: #57534e; }
       /* A meter that has gone has to be legible from across a room, mid-effort. */
       .meter-reconnecting, .meter-lost, .meter-failed {
         border-color: #b45309;
@@ -321,11 +338,11 @@ app_theme <- function() {
       }
       .meter-reconnecting .meter-state,
       .meter-lost .meter-state,
-      .meter-failed .meter-state { color: #b45309; font-weight: 600; }
+      .meter-failed .meter-state { color: #b45309; font-weight: 700; }
 
       #record_trace {
         width: 100%;
-        height: 240px;
+        height: 320px;
         display: block;
         background: #ffffff;
         border: 1px solid #e7e5e4;
