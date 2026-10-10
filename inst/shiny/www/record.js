@@ -146,7 +146,7 @@
         await connect(meter);
         break;
       } catch (err) {
-        if (attempt === 12) setState(meter, 'lost');
+        if (attempt >= 12) setState(meter, 'lost');
       }
     }
     meter.retrying = false;
