@@ -5,6 +5,7 @@ output:
     theme: spacelab
     toc: true
     toc_float: true
+    mathjax: null
 params:
   results: NULL
 ---
