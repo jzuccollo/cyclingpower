@@ -7,11 +7,11 @@
 level_dependence(by_level)
 }
 \arguments{
-\item{by_level}{Result of [agreement_by_level()].}
+\item{by_level}{Result of \code{\link[=agreement_by_level]{agreement_by_level()}}.}
 }
 \value{
 A tibble with one row per source pair per run, giving the lowest and
-  highest gain, the bands they came from, and `separated`.
+highest gain, the bands they came from, and \code{separated}.
 }
 \description{
 The finding a single average difference hides, stated as a test rather than
@@ -20,17 +20,21 @@ separated.
 }
 \details{
 The test is on the per-cent gain, not on watts. A meter that is a constant
-2.5% out reads further from its partner at 300 W than at 100 W, so a watts
-comparison of the extreme bands separates for every clean percentage meter
-— which is the precise confusion this exists to dispel. In per cent, that
-meter is flat and only a genuinely level-dependent one separates.
+2.5\% out reads further from its partner at 300 W than at 100 W, so a watts
+comparison of the extreme bands separates for every clean percentage meter.
+In per cent, that meter is flat and only a level-dependent one separates.
 
-Separation is non-overlapping 95% intervals, so there is no threshold
+Separation is non-overlapping 95\% intervals, so there is no threshold
 constant to argue about; a pair with too few seconds to resolve anything
-simply does not fire.
+does not fire.
 }
 \examples{
-\dontrun{
-read_rides(spec) |> align_rides() |> agreement_by_level() |> level_dependence()
+aligned <- read_rides(demo_rides()) |> align_rides()
+agreement_by_level(aligned) |> level_dependence()
 }
+\seealso{
+Other agreement:
+\code{\link[=agreement_by_level]{agreement_by_level()}},
+\code{\link[=power_agreement]{power_agreement()}}
 }
+\concept{agreement}

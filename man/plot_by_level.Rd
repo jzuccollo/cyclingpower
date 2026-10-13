@@ -7,9 +7,9 @@
 plot_by_level(by_level, scale = c("watts", "percent"))
 }
 \arguments{
-\item{by_level}{Result of [agreement_by_level()].}
+\item{by_level}{Result of \code{\link[=agreement_by_level]{agreement_by_level()}}.}
 
-\item{scale}{`"watts"` for the difference in watts, `"percent"` for the
+\item{scale}{\code{"watts"} for the difference in watts, \code{"percent"} for the
 gain. A constant percentage error is a rising line in watts and a flat
 line in per cent, so the two say different things about the same meter.}
 }
@@ -24,13 +24,20 @@ because time is not spread evenly across the range and the ends are usually
 thin.
 }
 \details{
-On the per-cent scale the caption carries the sentence that makes the
-toggle worth having: the two panels of the same data answer different
-questions, and a meter that looks level-dependent in watts is often only
-being a constant percentage out.
+On the per-cent scale the caption says why the two scales differ: a meter
+that looks level-dependent in watts is often only a constant percentage
+out.
 }
 \examples{
-\dontrun{
-read_rides(spec) |> align_rides() |> agreement_by_level() |> plot_by_level()
+read_rides(demo_rides()) |>
+  align_rides() |>
+  agreement_by_level() |>
+  plot_by_level()
 }
+\seealso{
+Other plots:
+\code{\link[=plot_agreement]{plot_agreement()}},
+\code{\link[=plot_chain]{plot_chain()}},
+\code{\link[=plot_timeseries]{plot_timeseries()}}
 }
+\concept{plots}

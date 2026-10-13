@@ -14,14 +14,13 @@ source_palette <- function() {
   )
 }
 
-#' Facet strips were rendering at around 6 px, which made the one label saying
-#' which pair a panel showed the smallest type on the page. Titles are sized
-#' down from ggplot's default so a plot inside a card does not shout over the
-#' card's own heading.
+#' Facet strips are sized up (ggplot renders them at about 6 px, and the strip
+#' is what names the pair a panel shows) and titles down, so a plot inside a
+#' card does not shout over the card's own heading.
 #'
-#' Deliberately no colour scale: only the plots that map a source or a basis
-#' want the Okabe-Ito series, and folding it in here meant the Bland-Altman
-#' plot's own scale — the one naming its lines — was silently replaced.
+#' No colour scale here: only the plots mapping a source or a basis want the
+#' Okabe-Ito series, and adding it would silently replace the Bland-Altman
+#' plot's own scale.
 #' @noRd
 chart_theme <- function() {
   list(
@@ -74,10 +73,9 @@ panel_label <- function(x) {
 #'
 #' @return A ggplot object.
 #'
+#' @family plots
 #' @examples
-#' \dontrun{
-#' read_rides(spec) |> align_rides() |> plot_timeseries()
-#' }
+#' read_rides(demo_rides()) |> align_rides() |> plot_timeseries()
 #' @export
 plot_timeseries <- function(aligned, smooth = 30) {
   smoothed <- aligned |>
@@ -135,18 +133,16 @@ plot_timeseries <- function(aligned, smooth = 30) {
 #'
 #' @return A ggplot object.
 #'
+#' @family plots
 #' @examples
-#' \dontrun{
-#' read_rides(spec) |> align_rides() |> plot_agreement()
-#' }
+#' read_rides(demo_rides()) |> align_rides() |> plot_agreement()
 #' @export
 plot_agreement <- function(aligned, min_power = 0) {
   pairs <- paired_seconds(aligned, min_power) |>
     panel_label()
 
-  # One row per line rather than three geom_hline layers with hard-coded
-  # aesthetics: the limits and the mean shared a colour and were told apart
-  # only by dash pattern, and the zero line appeared in no legend at all.
+  # One row per line rather than three geom_hline layers, so the mean, the
+  # limits and the zero line all get a legend entry that names them.
   lines <- pairs |>
     dplyr::group_by(.data$panel) |>
     dplyr::summarise(
@@ -230,10 +226,9 @@ plot_agreement <- function(aligned, min_power = 0) {
 #' because time is not spread evenly across the range and the ends are usually
 #' thin.
 #'
-#' On the per-cent scale the caption carries the sentence that makes the
-#' toggle worth having: the two panels of the same data answer different
-#' questions, and a meter that looks level-dependent in watts is often only
-#' being a constant percentage out.
+#' On the per-cent scale the caption says why the two scales differ: a meter
+#' that looks level-dependent in watts is often only a constant percentage
+#' out.
 #'
 #' @param by_level Result of [agreement_by_level()].
 #' @param scale `"watts"` for the difference in watts, `"percent"` for the
@@ -242,10 +237,12 @@ plot_agreement <- function(aligned, min_power = 0) {
 #'
 #' @return A ggplot object.
 #'
+#' @family plots
 #' @examples
-#' \dontrun{
-#' read_rides(spec) |> align_rides() |> agreement_by_level() |> plot_by_level()
-#' }
+#' read_rides(demo_rides()) |>
+#'   align_rides() |>
+#'   agreement_by_level() |>
+#'   plot_by_level()
 #' @export
 plot_by_level <- function(by_level, scale = c("watts", "percent")) {
   scale <- match.arg(scale)
@@ -310,10 +307,9 @@ plot_by_level <- function(by_level, scale = c("watts", "percent")) {
 #'
 #' @return A ggplot object.
 #'
+#' @family plots
 #' @examples
-#' \dontrun{
-#' read_rides(spec) |> align_rides() |> chain_sources() |> plot_chain()
-#' }
+#' read_rides(demo_rides()) |> align_rides() |> chain_sources() |> plot_chain()
 #' @export
 plot_chain <- function(chained) {
   plotted <- chained |>

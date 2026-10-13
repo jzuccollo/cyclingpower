@@ -1,13 +1,12 @@
 #' Run every comparison over one set of aligned rides
 #'
 #' The single computation path. Both the report and the Shiny app present these
-#' results rather than each running the pipeline themselves, which is what stops
-#' the two drifting into disagreeing about the same rides.
+#' results rather than each running the pipeline themselves, so the two cannot
+#' disagree about the same rides.
 #'
-#' Chaining is attempted rather than assumed: a set of rides with no meter in
-#' more than one run has nothing to chain through, which is an ordinary state
-#' rather than a failure, so the error is captured into `chain_error` and the
-#' rest of the results stand.
+#' Chaining is attempted, not assumed: a set of rides with no meter in more than
+#' one run has nothing to chain through, which is an ordinary state, so the
+#' error is captured into `chain_error` and the rest of the results stand.
 #'
 #' @param aligned Result of [align_rides()].
 #' @param spec The spec the rides were read from, carried through for reporting.
@@ -74,7 +73,8 @@ compare_all <- function(
 #' run — between meters that never rode together.
 #'
 #' @param spec Data frame with columns `path`, `run` and `source`, as built by
-#'   [ride_spec_from_names()].
+#'   [ride_spec_from_names()], or the path to a directory of ride files named
+#'   `<run>_<source>`.
 #' @param output_file Path of the HTML file to write.
 #' @param min_power Both sources must exceed this to count, in watts.
 #' @param width Bin width for the power-range breakdown, in watts.
@@ -89,12 +89,8 @@ compare_all <- function(
 #'
 #' @return The path of the rendered file, invisibly.
 #'
-#' @examples
-#' \dontrun{
-#' list.files("rides", full.names = TRUE) |>
-#'   ride_spec_from_names() |>
-#'   compare_report()
-#' }
+#' @examplesIf rlang::is_installed("rmarkdown") && rmarkdown::pandoc_available()
+#' compare_report(demo_rides(), tempfile(fileext = ".html"))
 #' @export
 compare_report <- function(
   spec,
@@ -108,6 +104,7 @@ compare_report <- function(
   smooth = 30,
   seed = NULL
 ) {
+  spec <- as_ride_spec(spec)
   aligned <- read_rides(spec) |> align_rides(max_offset = max_offset)
 
   compute <- function() {
@@ -141,8 +138,10 @@ compare_report <- function(
 #' @param output_file Path of the HTML file to write.
 #'
 #' @return The path of the rendered file, invisibly.
-#' @export
+#' @noRd
 render_comparison <- function(results, output_file) {
+  rlang::check_installed("rmarkdown", "to render the comparison report.")
+
   installed <- system.file(
     "rmarkdown",
     "comparison.Rmd",

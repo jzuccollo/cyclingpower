@@ -15,7 +15,7 @@
 #' and nothing in the ride files distinguishes that from a real difference.
 #' What can be checked is reported by [chain_report()] — whether the two runs
 #' covered comparable power, since gains compared over different parts of the
-#' range are not really comparable at all.
+#' range are not comparable.
 #'
 #' @param aligned Result of [align_rides()].
 #' @param bridge Source common to more than one run. Found automatically when
@@ -28,10 +28,11 @@
 #'   linked through the bridge (`chained`). Diagnostics are attached; see
 #'   [chain_report()].
 #'
+#' @family chaining
 #' @examples
-#' \dontrun{
-#' read_rides(spec) |> align_rides() |> chain_sources()
-#' }
+#' # The demo has assioma in both runs, so it bridges kickr to quarq
+#' aligned <- read_rides(demo_rides()) |> align_rides()
+#' chain_sources(aligned)
 #' @export
 chain_sources <- function(
   aligned,
@@ -70,6 +71,7 @@ chain_sources <- function(
 
   out <- compare_all_sources(gains, observed, bridge)
   attr(out, "chain") <- chain_diagnostics(pairs, bridge)
+  class(out) <- c("cyclingpower_chain", class(out))
   out
 }
 
@@ -90,10 +92,9 @@ chain_report <- function(chained) {
 #'
 #' @return A character vector of source names, empty when nothing qualifies.
 #'
+#' @family chaining
 #' @examples
-#' \dontrun{
-#' read_rides(spec) |> align_rides() |> bridge_candidates()
-#' }
+#' read_rides(demo_rides()) |> align_rides() |> bridge_candidates()
 #' @export
 bridge_candidates <- function(aligned) {
   presence <- unique(aligned[, c("run", "source")])
@@ -162,8 +163,8 @@ bridge_pairs <- function(seconds, bridge) {
 #' source over the second with its bootstrap draws, pooled over the runs
 #' carrying the pair.
 #'
-#' Each run is resampled on its own, which is what makes the interval on a
-#' chained comparison wider than either of the gains it is built from.
+#' Each run is resampled on its own, so the interval on a chained comparison is
+#' wider than either of the gains it is built from.
 #' @noRd
 pair_estimates <- function(seconds, block, replicates) {
   key <- paste(seconds$source_a, seconds$source_b, sep = "|")
@@ -207,8 +208,8 @@ pool_runs <- function(estimates) {
 }
 
 #' Each source on the bridge's scale, which is what makes two meters from
-#' different runs comparable. The gain is the pair's own estimate, negated where
-#' the bridge sorts first, since a pair is stored as log(first / second).
+#' different runs comparable. The gain is the pair's own estimate, negated
+#' where the bridge sorts first, since a pair is stored as log(first / second).
 #' @noRd
 bridge_gains <- function(observed, sources, bridge, replicates) {
   gains <- lapply(sources, function(source) {
@@ -307,10 +308,9 @@ chain_diagnostics <- function(pairs, bridge) {
 #' @return A tibble with one row per band per source pair, restricted to bands
 #'   covered by every run involved.
 #'
+#' @family chaining
 #' @examples
-#' \dontrun{
-#' read_rides(spec) |> align_rides() |> chain_by_level()
-#' }
+#' read_rides(demo_rides()) |> align_rides() |> chain_by_level()
 #' @export
 chain_by_level <- function(
   aligned,
@@ -376,8 +376,8 @@ bridged_sources <- function(pooled, bridge) {
 }
 
 #' Band by band, on the same rule as `compare_all_sources()`: a pair that rode
-#' together speaks for itself, and only a pair that never did goes through the
-#' bridge.
+#' together is reported from its own seconds, and only a pair that never did
+#' goes through the bridge.
 #' @noRd
 band_pair_gain <- function(pooled, pair, bridge, bands) {
   direct <- band_ratios(pooled, pair[[1]], pair[[2]], bands)

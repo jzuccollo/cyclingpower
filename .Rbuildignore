@@ -6,3 +6,8 @@
 ^dev$
 ^doc$
 ^Meta$
+^docs$
+^_pkgdown\.yml$
+^codecov\.yml$
+^\.lintr$
+^pkgdown$

@@ -2,12 +2,12 @@
 #' hand-assemble. Everything format-specific stays here; `canonicalise()` does
 #' the renaming and the schema check, as it does for FIT and GPX.
 #' @noRd
-read_csv_ride <- function(file_url) {
-  out <- utils::read.csv(file_url, stringsAsFactors = FALSE)
+read_csv_ride <- function(path) {
+  out <- utils::read.csv(path, stringsAsFactors = FALSE)
 
   if (!"time" %in% names(out)) {
     stop(
-      sprintf("No time column found in %s.", basename(file_url)),
+      sprintf("No time column found in %s.", basename(path)),
       " A ride CSV needs `time` and `power` at minimum."
     )
   }
@@ -17,12 +17,12 @@ read_csv_ride <- function(file_url) {
   out <- out[, vapply(out, function(col) !all(is.na(col)), logical(1))]
   out$time <- parse_csv_time(out$time)
 
-  canonicalise(out, file_url)
+  canonicalise(out, path)
 }
 
-#' Two spellings are worth accepting: ISO 8601, which is what a recorder should
-#' write, and epoch seconds, which is what falls out of a script that never
-#' bothered to format the clock.
+#' Two spellings: ISO 8601, which is what a recorder should write, and epoch
+#' seconds, which is what falls out of a script that never bothered to format
+#' the clock.
 #' @noRd
 parse_csv_time <- function(x) {
   if (is.numeric(x)) {

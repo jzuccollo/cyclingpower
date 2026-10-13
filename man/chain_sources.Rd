@@ -16,7 +16,7 @@ chain_sources(
 chain_report(chained)
 }
 \arguments{
-\item{aligned}{Result of [align_rides()].}
+\item{aligned}{Result of \code{\link[=align_rides]{align_rides()}}.}
 
 \item{bridge}{Source common to more than one run. Found automatically when
 exactly one source qualifies.}
@@ -27,14 +27,14 @@ exactly one source qualifies.}
 
 \item{replicates}{Number of bootstrap replicates.}
 
-\item{chained}{Result of [chain_sources()].}
+\item{chained}{Result of \code{\link[=chain_sources]{chain_sources()}}.}
 }
 \value{
 A tibble with one row per source pair, giving the gain of the first
-  relative to the second as a percentage with its interval, and a `basis`
-  column recording whether the pair was observed together (`direct`) or
-  linked through the bridge (`chained`). Diagnostics are attached; see
-  [chain_report()].
+relative to the second as a percentage with its interval, and a \code{basis}
+column recording whether the pair was observed together (\code{direct}) or
+linked through the bridge (\code{chained}). Diagnostics are attached; see
+\code{\link[=chain_report]{chain_report()}}.
 }
 \description{
 Three meters cannot always be ridden together. The usual shape is that run
@@ -51,12 +51,18 @@ interval comes from resampling the two runs independently.
 This rests on B reading the same on both days, which the data cannot check:
 any drift in B between rides transfers directly onto the A-to-C comparison
 and nothing in the ride files distinguishes that from a real difference.
-What can be checked is reported by [chain_report()] — whether the two runs
+What can be checked is reported by \code{\link[=chain_report]{chain_report()}} — whether the two runs
 covered comparable power, since gains compared over different parts of the
-range are not really comparable at all.
+range are not comparable.
 }
 \examples{
-\dontrun{
-read_rides(spec) |> align_rides() |> chain_sources()
+# The demo has assioma in both runs, so it bridges kickr to quarq
+aligned <- read_rides(demo_rides()) |> align_rides()
+chain_sources(aligned)
 }
+\seealso{
+Other chaining:
+\code{\link[=bridge_candidates]{bridge_candidates()}},
+\code{\link[=chain_by_level]{chain_by_level()}}
 }
+\concept{chaining}

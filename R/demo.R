@@ -45,8 +45,8 @@ demo_rides <- function(dir = file.path(tempdir(), "cyclingpower-demo")) {
   invisible(dir)
 }
 
-#' The pattern worth demonstrating: agreement at endurance pace and a widening
-#' gap above it, which the overall average reports as a small constant bias.
+#' Agreement at endurance pace and a widening gap above it, which the overall
+#' average reports as a small constant bias.
 #' @noRd
 level_dependent <- function(power, threshold = 200) {
   power * ifelse(power < threshold, 0.97, 1.05)

@@ -7,18 +7,22 @@
 bridge_candidates(aligned)
 }
 \arguments{
-\item{aligned}{Result of [align_rides()].}
+\item{aligned}{Result of \code{\link[=align_rides]{align_rides()}}.}
 }
 \value{
 A character vector of source names, empty when nothing qualifies.
 }
 \description{
 A meter can only link runs it appeared in more than one of. This is what
-[chain_sources()] searches when `bridge` is left unset, exposed separately so
+\code{\link[=chain_sources]{chain_sources()}} searches when \code{bridge} is left unset, exposed separately so
 anything offering the choice to a user works from the same list.
 }
 \examples{
-\dontrun{
-read_rides(spec) |> align_rides() |> bridge_candidates()
+read_rides(demo_rides()) |> align_rides() |> bridge_candidates()
 }
+\seealso{
+Other chaining:
+\code{\link[=chain_by_level]{chain_by_level()}},
+\code{\link[=chain_sources]{chain_sources()}}
 }
+\concept{chaining}

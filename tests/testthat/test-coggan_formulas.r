@@ -22,7 +22,7 @@ test_that("coasting counts towards average power", {
   half_and_half <- c(rep(200, 1800), rep(0, 1800))
 
   expect_equal(average_power(half_and_half), 100)
-  expect_equal(average_power(drop_zeros(half_and_half)), 200)
+  expect_equal(average_power(half_and_half[half_and_half != 0]), 200)
 
   # Normalised power weights the hard half more heavily, so it lands between
   # the overall average and the power actually ridden.
@@ -43,8 +43,8 @@ test_that("normalised power exceeds average power on a variable ride", {
 
 test_that("second-by-second noise alone does not raise normalised power", {
   # The 30-second window averages independent noise away, so a jittery ride
-  # around a steady average has a variability index of essentially 1. It is
-  # sustained changes in effort, not sample-to-sample scatter, that NP rewards.
+  # around a steady average has a variability index of 1. It is sustained
+  # changes in effort, not sample-to-sample scatter, that NP rewards.
   jittery <- withr::with_seed(1, stats::rpois(3600, 200))
 
   expect_equal(variability_index(jittery), 1, tolerance = 1e-3)
@@ -69,4 +69,13 @@ test_that("Coggan metrics on the reference ride", {
   expect_equal(intensity_factor(ride$power, ftp), 0.7658, tolerance = 1e-3)
   expect_equal(tss(ride$power, ftp), 58.66, tolerance = 1e-3)
   expect_equal(variability_index(ride$power), 1.1162, tolerance = 1e-3)
+})
+
+test_that("FTP must be supplied rather than assumed", {
+  # A score computed against somebody else's threshold is indistinguishable
+  # from one computed against yours, so there is no default to fall back on.
+  expect_error(tss(rep(250, 3600)))
+  expect_error(intensity_factor(rep(250, 600)))
+
+  expect_equal(tss(rep(300, 3600), ftp = 300), 100)
 })

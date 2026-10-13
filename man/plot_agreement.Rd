@@ -7,7 +7,7 @@
 plot_agreement(aligned, min_power = 0)
 }
 \arguments{
-\item{aligned}{Result of [align_rides()].}
+\item{aligned}{Result of \code{\link[=align_rides]{align_rides()}}.}
 
 \item{min_power}{Both sources must exceed this to count, in watts.}
 }
@@ -36,7 +36,12 @@ let you see a tilt, and letting the height float free of the width flattens
 the apparent slope by an amount that depends on the reader's window.
 }
 \examples{
-\dontrun{
-read_rides(spec) |> align_rides() |> plot_agreement()
+read_rides(demo_rides()) |> align_rides() |> plot_agreement()
 }
+\seealso{
+Other plots:
+\code{\link[=plot_by_level]{plot_by_level()}},
+\code{\link[=plot_chain]{plot_chain()}},
+\code{\link[=plot_timeseries]{plot_timeseries()}}
 }
+\concept{plots}

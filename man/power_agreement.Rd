@@ -7,7 +7,7 @@
 power_agreement(aligned, min_power = 0, block = 60, replicates = 1000)
 }
 \arguments{
-\item{aligned}{Result of [align_rides()].}
+\item{aligned}{Result of \code{\link[=align_rides]{align_rides()}}.}
 
 \item{min_power}{Both sources must exceed this to count, in watts.}
 
@@ -16,9 +16,23 @@ power_agreement(aligned, min_power = 0, block = 60, replicates = 1000)
 \item{replicates}{Number of bootstrap replicates.}
 }
 \value{
-A tibble with one row per source pair per run, holding the paired
-  seconds, the mean difference in watts with its interval, the limits of
-  agreement, and the gain as a percentage with its interval.
+A tibble with one row per source pair per run:
+\describe{
+\item{\code{run}, \code{source_a}, \code{source_b}}{The pair and the session it came
+from. \code{source_a} sorts before \code{source_b} alphabetically, and every
+difference is \code{source_a} minus \code{source_b}.}
+\item{\code{seconds}}{Paired seconds behind the row, after coasting and
+anything below \code{min_power} is dropped.}
+\item{\code{bias_w}, \code{bias_lo}, \code{bias_hi}}{Mean difference in watts, with its
+95\% bootstrap interval.}
+\item{\code{sd_difference}}{Standard deviation of the per-second difference.}
+\item{\code{loa_lo}, \code{loa_hi}}{Limits of agreement, \code{bias_w} +/- 1.96 SD:
+the range most individual seconds fall within. Not an interval on the
+mean, and much wider than one.}
+\item{\code{gain_pc}, \code{gain_lo}, \code{gain_hi}}{The same difference
+multiplicatively, as a percentage, with its 95\% bootstrap interval.
+Usually the more natural reading.}
+}
 }
 \description{
 Reports the Bland-Altman summary for every pair of sources in every run:
@@ -33,7 +47,12 @@ Intervals come from a moving-block bootstrap, not from treating each second
 as independent.
 }
 \examples{
-\dontrun{
-read_rides(spec) |> align_rides() |> power_agreement()
+aligned <- read_rides(demo_rides()) |> align_rides()
+power_agreement(aligned)
 }
+\seealso{
+Other agreement:
+\code{\link[=agreement_by_level]{agreement_by_level()}},
+\code{\link[=level_dependence]{level_dependence()}}
 }
+\concept{agreement}

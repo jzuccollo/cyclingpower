@@ -4,12 +4,14 @@
 \alias{intensity_factor}
 \title{Intensity factor}
 \usage{
-intensity_factor(power_data, ftp)
+intensity_factor(power, ftp)
 }
 \arguments{
-\item{power_data}{Numeric vector of per-second power in watts.}
+\item{power}{Numeric vector of per-second power in watts.}
 
-\item{ftp}{Functional threshold power in watts.}
+\item{ftp}{Functional threshold power in watts. No default: a number
+computed against somebody else's threshold looks exactly like a number
+computed against yours.}
 }
 \value{
 Intensity factor, where 1 is riding at threshold.
@@ -18,5 +20,13 @@ Intensity factor, where 1 is riding at threshold.
 Normalised power as a fraction of threshold power.
 }
 \examples{
-intensity_factor(rep(210, 600), ftp = 275)
+intensity_factor(rep(210, 600), ftp = 250)
 }
+\seealso{
+Other metrics:
+\code{\link[=average_power]{average_power()}},
+\code{\link[=normalised_power]{normalised_power()}},
+\code{\link[=tss]{tss()}},
+\code{\link[=variability_index]{variability_index()}}
+}
+\concept{metrics}

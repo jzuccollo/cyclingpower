@@ -1,0 +1,232 @@
+---
+title: "Comparing power meters"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Comparing power meters}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  message = FALSE,
+  warning = FALSE,
+  fig.width = 7,
+  fig.height = 4.5
+)
+set.seed(1)
+```
+
+Two power meters on the same bike rarely agree exactly, and the interesting
+question is not whether they differ but by how much, and whether the gap is
+steady or opens up as you push harder. This vignette walks through that
+comparison, then through the harder case where a third meter has to be brought
+onto the same scale without ever having been ridden alongside the first.
+
+```{r setup}
+library(cyclingpower)
+```
+
+Everything below runs on `demo_rides()`, which writes a small set of ride files
+with distortions chosen in advance, so every number has a known answer to check
+against. Two sessions:
+
+| Run | Meters | What was planted |
+|---|---|---|
+| run1 | assioma, kickr | kickr reads 2.5% low, and its clock runs 7 s fast |
+| run2 | assioma, quarq | quarq reads 3% low below 200 W and 5% high above it |
+
+assioma is in both, which is what makes the third meter reachable at the end.
+
+```{r demo}
+dir <- demo_rides()
+list.files(dir)
+```
+
+Real files replace these unchanged. `vignette("recording_rides")` covers how to
+record them, and several of the decisions there — recording rate, auto-pause,
+and what to ride — determine whether the steps below can work at all.
+
+## Getting files into the comparison
+
+The unit of analysis is a run, meaning one session ridden once, recorded by two
+or more sources. Hand `read_rides()` a directory and it reads the `run` and
+`source` labels off filenames shaped `run1_kickr.csv`:
+
+```{r read}
+rides <- read_rides(dir)
+rides
+```
+
+Every reader returns this same shape whatever the file format, so a GPX
+exported from Strava and a FIT pulled off a head unit arrive with the same
+column names and types. `time` and `power` are always present; the other
+channels appear when the file carries them.
+
+Where the filenames do not carry the labels, build the table yourself and pass
+that instead — `read_rides()` takes a data frame of `path`, `run` and `source`
+just as happily as a directory. A filename that does not split cleanly is an
+error rather than a silently missing label.
+
+```{r read-file}
+one <- read_file(file.path(dir, "run1_kickr.csv"))
+head(one, 3)
+```
+
+## Putting the sources on one clock
+
+That seven-second offset matters. Differencing the two series on their nominal
+timestamps compares power from one moment against power from another, which
+inflates the spread and shifts the average difference, and nothing about the
+result announces that it has happened. `align_rides()`
+resamples each source onto a one-second grid and recovers the offset by
+cross-correlating the power traces.
+
+```{r align}
+aligned <- align_rides(rides)
+alignment_report(aligned)
+```
+
+The seven seconds planted in kickr's clock come back as seven. `offset` is the
+correction applied, `correlation` how well the traces matched at that offset,
+and `status` whether the offset was established at all. Where both channels came
+off a single head unit the offset is zero and the same code path serves. Where a
+ride was too steady to lock onto — a long block at constant power has no
+features to align against — the status comes back `unresolved`, the recorded
+timestamps stand, and a warning says so.
+
+```{r timeseries}
+plot_timeseries(aligned)
+```
+
+## How far apart do they read?
+
+```{r agreement}
+power_agreement(aligned)
+```
+
+The sentence above the table is the answer; the columns are there to check it.
+`bias_w` is the average difference in watts and `gain_pc` the same thing
+multiplicatively, which is usually the more natural way to think about a power
+meter, since meters tend to be a few per cent out rather than a fixed number of
+watts out. kickr was built to read 2.5 per cent low, and assioma against it
+comes back at about 2.6 per cent, which is `1 / 0.975 - 1`. `loa_lo` and
+`loa_hi` bound the range within which most individual seconds fall — a much
+wider range than the interval on the average, and a different question.
+
+Look at run2, though. Its interval straddles zero, which reads as *these two
+meters agree*. Hold that thought.
+
+The intervals come from a moving-block bootstrap rather than from treating each
+second as an independent observation. Per-second power is heavily
+autocorrelated — what you are riding now is nearly what you were riding a second
+ago — so an hour's recording carries far less independent information than its
+3,600 rows suggest, and an interval built on the independence assumption would
+be roughly an order of magnitude too narrow.
+
+```{r bland-altman}
+plot_agreement(aligned)
+```
+
+## Does the gap change with effort?
+
+A single average difference hides the pattern that usually matters, which is a
+meter agreeing at endurance pace and drifting at threshold.
+`agreement_by_level()` bins the seconds by the mean of the two readings and
+reports the difference within each band.
+
+```{r by-level}
+by_level <- agreement_by_level(aligned, width = 25)
+plot_by_level(by_level, scale = "percent")
+```
+
+There is run2. The overall figure said the two meters agreed to within half a
+per cent; the bands show quarq reading about three per cent low up to 200 W and
+about five per cent high above it. The average was not wrong — the errors really
+do cancel over this ride — but it describes no part of the range, and on a ride
+weighted differently it would have come out somewhere else entirely.
+
+Seconds are binned on the mean of the two meters, never on one nominated meter.
+If you bin by assioma and then plot assioma minus quarq against those bins,
+assioma's own measurement noise pushes the points into a slope, and the trend
+you see is an artefact of the plotting.
+
+`level_dependence()` states it rather than leaving it to the eye:
+
+```{r level-dependence}
+level_dependence(by_level)
+```
+
+`separated` is whether the extreme bands' 95% intervals overlap, so a pair with
+too few seconds to resolve anything does not fire. run1's clean 2.5 per cent
+gain is flat across the range and does not separate; run2 does.
+
+`seconds` travels with every row because time is not spread evenly across the
+power range. The ends are usually thin, and an estimate resting on twenty
+seconds deserves less weight than one resting on six hundred.
+
+## Bringing in a third meter
+
+Now the awkward case. run1 carried assioma and kickr, run2 carried assioma and
+quarq. kickr and quarq have never been on the bike together, so there is no
+second at which both were measuring. assioma is the bridge: each run gives a
+gain relative to it, and the difference between those two gains is kickr
+against quarq.
+
+```{r chain}
+chained <- chain_sources(aligned)
+chained
+```
+
+The `basis` column marks the last row as chained rather than directly observed.
+The two direct comparisons rest on seconds where both meters measured the same
+effort; the chained one rests on an assumption as well.
+
+```{r chain-plot}
+plot_chain(chained)
+```
+
+The assumption is that assioma read the same on both days, and nothing in the
+ride files can test it. A meter that drifted between the two sessions moves the
+kickr-to-quarq figure by exactly the amount it drifted, and nothing in the data
+separates that from a difference between the meters. That is why the print
+method says so without being asked. `chain_report()` states it again
+and reports what *can* be checked, which is whether the two runs covered
+comparable power — gains estimated over different parts of the range are not
+really comparable at all.
+
+```{r chain-report}
+report <- chain_report(chained)
+report$assumption
+report$overlap
+report$coverage
+```
+
+The chained interval is wider than either direct one it is built from. It has to
+be: two independently bootstrapped runs are being subtracted.
+
+## Doing all of it at once
+
+`compare_report()` runs this whole sequence and writes it out as a single HTML
+document, which is usually what you want once the exploration is done. It takes
+the same directory:
+
+```{r report, eval = FALSE}
+compare_report(dir, "power-comparison.html")
+```
+
+`launch_app()` opens the same pipeline as a local web interface, with the
+settings live and a download button that renders the report from the results
+already on screen.
+
+## Reading FIT files
+
+FIT needs [FITfileR](https://github.com/grimbough/FITfileR), which is not on
+CRAN. Everything above works without it; only `.fit` input needs it.
+
+```{r fit, eval = requireNamespace("FITfileR", quietly = TRUE)}
+read_file(system.file("extdata", "power1.fit", package = "cyclingpower")) |>
+  head(3)
+```

@@ -16,10 +16,9 @@ gpx_field_names <- function() {
   )
 }
 
-#' Matching on local name rather than namespace prefix is what makes this
-#' robust to who wrote the file. Prefixes are arbitrary and the URIs differ
-#' across GPX versions and Garmin's several extension schemas, so keying on
-#' them means an unexpected namespace silently yields nothing.
+#' Matched on local name, not namespace prefix. Prefixes are arbitrary and the
+#' URIs differ across GPX versions and Garmin's several extension schemas, so
+#' keying on them means an unexpected namespace silently yields nothing.
 #' @noRd
 local_name_xpath <- function(names) {
   paste0(
@@ -42,12 +41,12 @@ parse_gpx_time <- function(x) {
 #' of a dozen transitive dependencies, and which finds power only when it is
 #' written as a bare `<power>` in the default GPX namespace.
 #' @noRd
-read_gpx <- function(file_url) {
-  points <- xml2::read_xml(file_url) |>
+read_gpx <- function(path) {
+  points <- xml2::read_xml(path) |>
     xml2::xml_find_all("//*[local-name()='trkpt']")
 
   if (length(points) == 0) {
-    stop(sprintf("No track points found in %s.", basename(file_url)))
+    stop(sprintf("No track points found in %s.", basename(path)))
   }
 
   extracted <- lapply(gpx_field_names(), function(names) {
@@ -63,5 +62,5 @@ read_gpx <- function(file_url) {
   out <- out[, vapply(out, function(col) !all(is.na(col)), logical(1))]
   out$time <- parse_gpx_time(out$time)
 
-  canonicalise(out, file_url)
+  canonicalise(out, path)
 }

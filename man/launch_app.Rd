@@ -9,20 +9,20 @@ launch_app(dir = NULL, ...)
 \arguments{
 \item{dir}{Directory of ride files to open with. Can also be set in the app.}
 
-\item{...}{Passed to [shiny::runApp()], for `port` and `host`.}
+\item{...}{Passed to \code{\link[shiny:runApp]{shiny::runApp()}}, for \code{port} and \code{host}.}
 }
 \value{
 Nothing useful; called for the running app.
 }
 \description{
-Opens a local web interface over the same pipeline as [compare_report()]:
+Opens a local web interface over the same pipeline as \code{\link[=compare_report]{compare_report()}}:
 point it at a directory of ride files, correct the run and source labels if
 the filenames do not carry them, and read the results with the settings live.
 }
 \details{
-The report is still the thing to keep — it is a file you can send or come
-back to — and the app's download button renders it from the results already
-on screen, so the two cannot disagree.
+The report is the thing to keep, being a file you can send or come back to.
+The app's download button renders it from the results already on screen, so
+the two cannot disagree.
 }
 \examples{
 \dontrun{

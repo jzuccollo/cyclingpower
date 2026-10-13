@@ -1,47 +1,83 @@
 # Contributing to cyclingpower
 
-This outlines how to propose a change to cyclingpower. 
-For more detailed info about contributing to this, and other tidyverse packages, please see the
-[**development contributing guide**](https://rstd.io/tidy-contrib). 
+Issues and pull requests are welcome. This is a one-maintainer package, so
+please open an issue before starting anything large — it may already be a
+deliberate omission.
 
-## Fixing typos
+## Before you start
 
-You can fix typos, spelling mistakes, or grammatical errors in the documentation directly using the GitHub web interface, as long as the changes are made in the _source_ file. 
-This generally means you'll need to edit [roxygen2 comments](https://roxygen2.r-lib.org/articles/roxygen2.html) in an `.R`, not a `.Rd` file. 
-You can find the `.R` file that generates the `.Rd` by reading the comment in the first line.
+```r
+devtools::install_dev_deps()
+devtools::load_all()
+devtools::test()
+devtools::check()
+```
 
-## Bigger changes
+`FITfileR` is not on CRAN and is fetched from the `Remotes:` entry. Without it
+the FIT tests skip rather than fail; everything else still runs.
 
-If you want to make a bigger change, it's a good idea to first file an issue and make sure someone from the team agrees that it’s needed. 
-If you’ve found a bug, please file an issue that illustrates the bug with a minimal 
-[reprex](https://www.tidyverse.org/help/#reprex) (this will also help you write a unit test, if needed).
+## How this package is tested
 
-### Pull request process
+This is the part worth reading before you write a test.
 
-*   Fork the package and clone onto your computer. If you haven't done this before, we recommend using `usethis::create_from_github("jzuccollo/cyclingpower", fork = TRUE)`.
+A characterisation test on a real ride file shows only that the code ran. The
+suite instead **plants a distortion it chose and asserts the machinery recovers
+it** — see `tests/testthat/helper-synthetic.R` for `make_source()` (gain,
+offset, lag, noise), `make_level_dependent()` and `featureless_rides()`, and
+`demo_rides()` for a whole set of files with known answers in them. When you
+add a capability, plant a known answer for it. Do not pin whatever the code
+currently emits.
 
-*   Install all development dependences with `devtools::install_dev_deps()`, and then make sure the package passes R CMD check by running `devtools::check()`. 
-    If R CMD check doesn't pass cleanly, it's a good idea to ask for help before continuing. 
-*   Create a Git branch for your pull request (PR). We recommend using `usethis::pr_init("brief-description-of-change")`.
+Two traps that will bite you:
 
-*   Make your changes, commit to git, and then create a PR by running `usethis::pr_push()`, and following the prompts in your browser.
-    The title of your PR should briefly describe the change.
-    The body of your PR should contain `Fixes #issue-number`.
+* Anything touching the bootstrap must be wrapped in `withr::with_seed()` or it
+  is flaky.
+* A *pure* gain with no noise gives every second an identical log ratio, so the
+  bootstrap distribution is degenerate and the interval collapses to a point.
+  That is correct. Add noise when testing that an interval brackets a value.
 
-*  For user-facing changes, add a bullet to the top of `NEWS.md` (i.e. just below the first header). Follow the style described in <https://style.tidyverse.org/news.html>.
+## The recorder
 
-### Code style
+`R/record.R` and `inst/shiny/www/record.js` read power meters over Web
+Bluetooth. The packet parser is tested under V8 and the file writing is tested
+normally. **The radio path — `requestDevice`, the GATT connection,
+notifications, the reconnection loop, the wake lock — is not tested and cannot
+be.** It needs a physical meter, a paired browser and a user gesture.
 
-*   New code should follow the tidyverse [style guide](https://style.tidyverse.org). 
-    You can use the [styler](https://CRAN.R-project.org/package=styler) package to apply these styles, but please don't restyle code that has nothing to do with your PR.  
+Please do not add a mock for it. A mock here would test the mock, not the
+parser the browser actually runs, and the credibility of the rest of the suite
+rests on the untested part being visibly marked rather than papered over.
 
-*  We use [roxygen2](https://cran.r-project.org/package=roxygen2), with [Markdown syntax](https://cran.r-project.org/web/packages/roxygen2/vignettes/rd-formatting.html), for documentation.  
+Several things in that file look like they could be simplified and cannot:
 
-*  We use [testthat](https://cran.r-project.org/package=testthat) for unit tests. 
-   Contributions with test cases included are easier to accept.  
+* Samples are batched at 500 ms because Shiny collapses repeat `setInputValue`
+  calls of the same name within a tick, which silently loses samples from a
+  4 Hz meter.
+* A gap is never padded with zeros. Zeros read as coasting, coasting is dropped
+  as a second both meters agreed on, and a dropped connection would then enter
+  the comparison as evidence of agreement.
+* Stopping is ordered: a capture-phase click listener queues the final batch
+  before Shiny sends the button press, and the `input$samples` observer has
+  `priority = 10` against the stop observer's `-10`.
+* `record.js` addresses `#pair_meter` and `#stop_record` directly, so the app's
+  Record tab must not be wrapped in a Shiny module namespace.
 
-## Code of Conduct
+**Do not add trainer control.** It was considered and rejected; the reasoning
+is in `CLAUDE.md`. The package emits a workout file and something else rides it.
 
-Please note that the cyclingpower project is released with a
-[Contributor Code of Conduct](CODE_OF_CONDUCT.md). By contributing to this
-project you agree to abide by its terms.
+## Code style
+
+* Native pipe `|>`, `<-` for assignment, `snake_case`.
+* Explicit `pkg::` prefixes in `R/`. Shiny is in `Suggests`, so the app code
+  qualifies every call rather than attaching the package.
+* `.groups = "drop"` in every `summarise()`.
+* Comments explain *why*, not *what*.
+* Minimal defensive coding. Errors are for genuine boundaries — an unreadable
+  file, an impossible chain — not for guarding internal states.
+* `NAMESPACE` and `man/` are roxygen-generated. Run `devtools::document()`;
+  never hand-edit them.
+
+## Pull requests
+
+Fork, branch, and make sure `devtools::check()` is clean before you open it.
+Add a bullet to `NEWS.md` for anything a user would notice.

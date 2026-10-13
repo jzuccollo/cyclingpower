@@ -1,34 +1,41 @@
 Package: cyclingpower
 Type: Package
 Title: Compare readings from multiple cycling power meters
-Version: 0.2.0
-Author: jz
-Maintainer: jz <jameszuccollo@gmail.com>
-Description: Read FIT and GPX ride files recorded by two or more power
+Version: 0.4.0
+Authors@R:
+    person("James", "Zuccollo", , "jameszuccollo@gmail.com",
+           role = c("aut", "cre", "cph"))
+Description: Read FIT, GPX and CSV ride files recorded by two or more power
     meters, align them onto a common clock, and quantify how their readings
     differ overall and across the power range. Supports linking a third
-    meter to the first two through a bridge meter common to both rides.
-License: GPL-3
+    meter to the first two through a bridge meter common to both rides. The
+    bundled app can also record the meters itself over Web Bluetooth, so
+    every source is stamped by one clock.
+License: MIT + file LICENSE
+URL: https://github.com/jzuccollo/cyclingpower,
+    https://jzuccollo.github.io/cyclingpower/
+BugReports: https://github.com/jzuccollo/cyclingpower/issues
 Encoding: UTF-8
-LazyData: true
+Depends:
+    R (>= 4.1)
 Remotes:
     grimbough/FITfileR
 Suggests:
     bslib,
     DT,
     FITfileR,
+    htmltools,
     knitr,
+    rmarkdown,
     shiny,
     shinyFiles,
-    testthat
+    testthat,
+    V8
 VignetteBuilder: knitr
 Imports:
     dplyr,
     ggplot2,
-    purrr,
     rlang,
-    rmarkdown,
-    skimr,
     stats,
     tibble,
     tidyr,
@@ -37,4 +44,5 @@ Imports:
     withr,
     xml2,
     zoo
+Roxygen: list(markdown = TRUE)
 Config/roxygen2/version: 8.0.0

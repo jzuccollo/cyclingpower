@@ -1,24 +1,15 @@
 #' Simulate a power series with a given average and normalised power
 #'
-#' Inverts the metrics: rather than summarising a ride you rode, it builds a
-#' second-by-second series that would produce the numbers you name.
+#' Rather than summarising a ride you rode, it builds a
+#' second-by-second series that would produce the specified numbers.
 #'
-#' The problem is wildly underdetermined — thousands of seconds, two
-#' constraints — so the shape has to come from somewhere. Here it comes from an
-#' autocorrelated process, which is what riding actually looks like: you hold a
-#' power for minutes at a time rather than jumping about at random. That matters
-#' because normalised power is defined on a thirty-second rolling mean, and
-#' second-by-second noise averages away inside that window. A series of
-#' independent draws has a variability index of essentially 1 no matter how wide
-#' its spread, so noise alone cannot produce a normalised power above the
-#' average.
+#' The problem is underdetermined so the shape comes from an
+#' autocorrelated process, which is what riding looks like: you hold a power for
+#' minutes at a time rather than jumping about at random.
 #'
-#' Scale and shape are then solved separately, which is what makes this exact
-#' and quick. Both metrics scale linearly with power, so their ratio does not
-#' depend on the overall level: raising the series to a power sets the
-#' variability index, and multiplying through afterwards sets the average
-#' without disturbing it. That leaves one monotone equation in one unknown
-#' rather than a search over every second of the ride.
+#' Scale and shape are then solved separately. Both metrics scale linearly with power, so their ratio does not
+#' depend on the overall level. Raising the series to a power sets the
+#' variability index, and multiplying by a constant sets the average.
 #'
 #' @param n_seconds Number of seconds to simulate.
 #' @param target_ap Average power to hit, in watts.
@@ -43,9 +34,9 @@
 #' Within a feasible intensity the shape holds up, but its upper tail is
 #' lognormal and widens with the variability index, so a ragged ride posts
 #' sustained peaks — the best thirty seconds, not the peak second — beyond what
-#' the same ride's five-minute best implies. Treat a high variability index as
-#' the place where the series stops being a plausible ride and starts being
-#' merely a series with the right two numbers.
+#' the same ride's five-minute best implies. At a high variability index the
+#' series stops being a plausible ride and is only a series with the right two
+#' numbers.
 #'
 #' @examples
 #' ride <- withr::with_seed(1, simulate_power(3600, target_ap = 180, target_np = 220))

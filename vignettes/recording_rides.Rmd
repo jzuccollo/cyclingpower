@@ -11,21 +11,208 @@ vignette: >
 knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>",
-  eval = FALSE
+  eval = FALSE,
+  # The chunks below describe riding that has not happened and files that do
+  # not exist, so they are illustrations rather than examples. Tangling them
+  # hands R CMD check a script it will try to run, which fails on the first
+  # bare call before the vignette ever reaches its library() line.
+  purl = FALSE
 )
 ```
 
-Everything in `vignette("compare_pms")` assumes you already have two or three
-files recorded from the same riding. Getting those files is the part that
-actually goes wrong, and most of the ways it goes wrong cannot be repaired
-afterwards: a dropped sample is gone, a mid-ride auto-pause cannot be undone,
-and a perfectly steady hour contains no evidence about how far apart the head
-unit clocks were.
+Everything in `vignette("cyclingpower")` assumes you already have two or three
+files recorded from the same riding. Getting those files is where it goes wrong,
+and most of the ways it goes wrong cannot be repaired afterwards: a dropped
+sample is gone, a mid-ride auto-pause cannot be undone, and a perfectly steady
+hour contains no evidence about how far apart the head unit clocks were.
 
-This vignette is the recording protocol. It is short, and following it costs
-one extra minute at the start of a ride.
+This vignette is the recording protocol. Following it costs one extra minute at
+the start of a ride.
+
+There are two routes, and most of what can go wrong belongs to only one of
+them. `launch_app()` can record the meters itself over Web Bluetooth, in which
+case one clock stamps every sample and half the failures below cannot happen.
+Where that is not possible — an ANT+-only meter, a browser other than Chrome or
+Edge — each meter keeps its own head unit and the recordings are independent,
+which is the case the rest of this vignette is mostly about.
+
+## Recording in the app
+
+Open the app, go to the Record tab, and pair each meter. What that buys is a
+single timebase: the page stamps every sample from its own clock at the moment
+it arrives, so the sources share a clock by construction rather than having one
+recovered from them afterwards. Auto-pause, smart recording and an unset head
+unit clock are all failure modes of independent recorders, and none of them
+exists here.
+
+Four constraints come with it. Settle all four before the ride.
+
+**Chrome or Edge.** Safari has never shipped Web Bluetooth and WebKit has no
+active bug for it; Mozilla declined the specification on privacy grounds. The
+Record tab detects this and says so rather than offering a button that silently
+does nothing. `http://localhost` counts as a secure context, so nothing has to
+be done about certificates.
+
+**One press per meter.** The browser will not open its device chooser
+programmatically, so pairing three meters is three presses. There is no way
+round it.
+
+**A meter holds one Bluetooth connection at a time.** While the page has the
+trainer, Zwift and TrainerRoad cannot. Pair the training app to the trainer over
+ANT+ instead — a dual-band trainer takes FE-C control over ANT+ and broadcasts
+power over BLE simultaneously, so the training app drives the targets while the
+recorder listens. If your erg targets are being commanded over Bluetooth, they
+will stop the moment you pair the trainer here.
+
+**Leave the tab visible.** Chrome throttles background tabs and stalls
+notifications on a sleeping display. The app holds a screen wake lock while
+recording and reacquires it when the tab comes back, but a tab buried behind a
+training app is not something the wake lock helps with.
+
+The app writes `<run>_<source>.csv` per meter into the directory you choose,
+appending and flushing each batch as it arrives, so a browser tab that dies
+mid-ride costs a fraction of a second rather than the ride. Both labels become
+filenames, so they take letters, digits and hyphens only, and an existing file
+is never written over. When you stop, the Rides tab scans that directory like
+any other: the handoff between the recorder and the analysis is the filesystem
+and nothing else.
+
+A meter that drops out is shown as disconnected and reconnected automatically.
+The seconds it missed are a gap in its file, not a run of zeros. Zeros would be
+read as coasting, and coasting is dropped as a second both meters agreed on, so
+a lost connection would enter the comparison as evidence of agreement.
+
+One caveat. The packet parser is unit-tested against captured byte arrays, and
+the file writing is tested end to end through the same pipeline every other ride
+goes through. The radio path — the chooser, the GATT connection, notifications,
+the reconnection loop — is not tested and cannot be without a physical meter.
+Ride the first session against a head unit you already trust and compare the two
+files before relying on the app for anything you care about.
+
+## What to ride when the app is recording
+
+The separate-head-unit route below asks for surges because the
+cross-correlation needs an edge to lock onto, and steps because the by-level
+comparison needs coverage. Once one clock stamps every sample the offset is
+zero by construction and that compromise dissolves: erg mode becomes the *best*
+ride rather than the worst, because it puts a chosen number of seconds into a
+chosen band instead of leaving band coverage to how the day went.
+
+One piece has to survive. With no feature to lock onto, `check_alignment()`
+cannot tell "these clocks agree" from "these traces cannot be compared at all":
+it collapses both into `unresolved`, forces the offset to zero and warns. A
+recorder that stamped every meter wrongly would pass that check exactly as a
+correct one does. So a short sync block stays — not to find the offset, but to
+make finding it possible, so that a resolved zero is evidence rather than a
+default.
+
+```{r, eval = TRUE, echo = FALSE}
+knitr::kable(
+  cyclingpower::collapse_protocol(
+    cyclingpower::comparison_protocol(),
+    ftp = 250
+  ),
+  row.names = FALSE
+)
+```
+
+The targets above are for a 250 W rider; `collapse_protocol()` takes your own
+FTP. Twenty-four minutes, which is short enough to ride twice in a session when
+you are chaining a third meter. Ride it identically every time, because a
+chained comparison rests on the bridge meter reading the same in both runs and
+`chain_report()$overlap` can only confirm the two runs covered the same power if
+they were asked to.
+
+**Two minutes a step is a floor, not a default to trim.** What runs out first is
+not `min_seconds` but bootstrap blocks. The up and down ladders land in the same
+bands, so a band carries roughly twice the step length, and at a 60-second block
+two-minute steps leave it about four blocks to resample. Going shorter drops
+under three, and a bootstrap drawing two blocks is not estimating anything. The
+cost of getting here from four-minute steps is about 17% wider bands, measured
+on synthetic rides with a planted gain. That was a good trade for halving the
+session; going shorter again is not.
+
+**There is no sync block at the end.** A closing block detects only a clock that
+drifted during the ride, and when the app records there is one clock stamping
+every meter, which cannot drift relative to itself. Independent head units are
+the case where two clocks can separate, and that route — below — should still
+repeat the surges at the end.
+
+That table is `comparison_protocol()`, and `write_workout()` turns it into a
+file your training app can command, so "identically every time" is something the
+trainer does rather than something you remember. The Record tab has the same
+table and a download button on it.
+
+```{r, purl = FALSE}
+write_workout("comparison.zwo", ftp = 250)
+```
+
+A `.zwo` writes the ladder steps as `SteadyState` and the surges and coasts as
+`FreeRide`, which drops the trainer out of erg for exactly the blocks that must
+not be ridden in it. A `.erg` course — Golden Cheetah, TrainerDay, PerfPro — has
+no way to express that, so it carries the surge targets as watts and you switch
+out of erg by hand. Either file is loaded into the training app, which commands
+the trainer over ANT+ while this page holds its Bluetooth.
+
+**The ladder runs up and then back down.** A meter reading high because it has
+warmed up gives different numbers at the same target on the way down; a
+level-dependent meter repeats itself. Ridden in one direction only the two are
+indistinguishable, and `level_dependence()` would report the drift as an error
+that depends on power.
+
+**Do not surge in erg.** The trainer fights the surge and rounds off precisely
+the edge the cross-correlation needs. Switch to level or slope mode for the sync
+blocks.
+
+**Erg makes the trainer the controlled variable**, holding its own reading at
+target, so within a step the trainer is nearly flat and almost all the spread
+comes from the other meter. That does not bias anything — `level` is the mean of
+the two, not the trainer's number — but it does mean the trainer decides which
+band a second lands in, rather than both meters having wandered into that band
+together.
+
+Hold a steady cadence through each step. If you want one extra thing from the
+session, repeat a single step at two cadences perhaps 25 rpm apart: a crank or
+pedal meter's error can depend on cadence, and the channel is carried through
+the schema, though nothing in the package looks at it yet.
+
+### Driving it from a head unit
+
+A head unit is the easiest thing to put on the other end, and on a Wahoo ELEMNT,
+BOLT or ROAM the workout can be pushed to it from intervals.icu, which imports
+`.zwo` directly. Three things to settle before the ride; two of them are silent
+when they go wrong.
+
+**Force the head unit to pair the trainer over ANT+.** An ELEMNT connects to a
+Wahoo trainer over Bluetooth by default, and pairing it that way spends the
+Bluetooth connection this page needs. Wahoo's own instruction for using the
+trainer with another app at the same time is to force the ANT+ pairing, and a
+head unit controlling over FE-C leaves the Bluetooth side untouched. A KICKR or
+CORE on firmware from late 2019 onwards will hold three Bluetooth connections
+and may appear to tolerate both, but two controllers on one radio is not a thing
+to build a session on.
+
+**A block with no power target releases erg by itself.** In planned-workout mode
+the head unit follows the workout's own resistance design, and a segment
+carrying no target drops the trainer into resistance mode rather than holding
+the last one. That is what the sync surges need, so the `FreeRide` blocks come
+out right without anything being switched by hand.
+
+**The workout and the recording are independent.** The head unit commands the
+trainer; this page records; nothing passes between them. So the sync block only
+has to be in the *recording*, not in the workout — if the surges arrive as erg
+targets anyway, ride them in level mode before starting the workout and the
+comparison cannot tell the difference. Exploit that on the first session: the
+head unit is recording the ride regardless, so its own file of the trainer
+against this page's file of the same trainer is a free check on the one path in
+the recorder that has no automated test.
 
 ## One meter, many listeners
+
+Everything from here is the other route: one head unit per meter, recordings
+that are independent, and a clock offset that has to be recovered from the power
+traces afterwards. It is what an ANT+-only meter needs, and what to fall back on
+when the app cannot record.
 
 The constraint that shapes the whole setup is that a power meter broadcasts,
 but a recorder records one power source. There is no consumer head unit that
@@ -60,7 +247,7 @@ important enough to buy one for.
 
 ## Settings on each recorder
 
-Three settings matter, and the first two matter a great deal.
+Three settings matter, the first two a great deal.
 
 **Record every second, not "smart" recording.** Garmin's smart recording writes
 a sample only when the numbers change enough, which produces a file with
@@ -100,18 +287,19 @@ other is not something the analysis models: it will average the before and
 after into a single bias, and the limits of agreement will widen without any
 indication of why.
 
-## What to actually ride
+## What to ride on separate head units
 
-Two things the analysis needs pull in opposite directions, and this is the part
-worth planning.
+Two things the analysis needs pull in opposite directions. It is the compromise
+the app's single clock dissolves, so if you are recording in the app, ride the
+session in the table above instead.
 
 **The alignment needs features.** `align_rides()` recovers each clock offset by
 sliding one power trace against another and taking the offset with the highest
 correlation. A block at constant power correlates about equally well at every
 offset, so there is no peak to find, and `check_alignment()` returns
-`unresolved`, forces the offset to zero and warns. That is the honest answer,
-but it means a clean ERG session — the most controlled ride you can do — is the
-worst possible ride for establishing what the offset was.
+`unresolved`, forces the offset to zero and warns. So a clean ERG session — the
+most controlled ride you can do — is the worst possible ride for establishing
+what the offset was.
 
 **The by-level comparison needs coverage.** `agreement_by_level()` bins seconds
 by the mean of the two readings, so a bin only exists if you spent time there.
@@ -206,7 +394,7 @@ Then `ride_spec_from_names()` builds the table `read_rides()` wants, and a
 filename that does not split cleanly is an error rather than a silently
 mislabelled ride.
 
-```{r pipeline}
+```{r pipeline, purl = FALSE}
 library(cyclingpower)
 
 aligned <- list.files("rides", full.names = TRUE) |>
@@ -217,12 +405,12 @@ aligned <- list.files("rides", full.names = TRUE) |>
 
 ## Checking that the recording worked
 
-Three checks before you trust anything downstream, all worth doing while you
-could still repeat the ride.
+Three checks before you trust anything downstream, all of them while you could
+still repeat the ride.
 
 The alignment resolved:
 
-```{r check-alignment}
+```{r check-alignment, purl = FALSE}
 alignment_report(aligned)
 ```
 
@@ -232,24 +420,39 @@ soft or is missing; a large correlation with a large offset means the clocks
 really were far apart, which is fine. A low correlation on a ride you know had
 surges in it usually means the two files are not the same session.
 
+For a ride the app recorded, look for `aligned` with an offset of zero, not an
+offset of zero on its own. `unresolved` returns zero too, and means the check
+could not be made.
+
 The bins are populated:
 
-```{r check-coverage}
+```{r check-coverage, purl = FALSE}
 agreement_by_level(aligned) |>
-  dplyr::select(pair, level, seconds, bias_w)
+  dplyr::select(source_a, source_b, band_range, seconds, bias_w)
 ```
 
-The `seconds` column is there to be read. A bin resting on twenty seconds is
-not evidence of anything, and the steps are what fill the bins you care about.
+A bin resting on twenty seconds is not evidence of anything, and the steps are
+what fill the bins you care about.
 
-And, for a chained comparison, that the two runs actually covered comparable
-ground:
+And, for a chained comparison, that the two runs covered comparable ground:
 
-```{r check-chain}
+```{r check-chain, purl = FALSE}
 chain_report(chain_sources(aligned))$coverage
 ```
 
 ## The short version
+
+Recording in the app, in Chrome:
+
+- Pair each meter on the Record tab, one press each, and label them.
+- Command erg targets over ANT+; the page holds the trainer's Bluetooth.
+- Zero every meter, then thirty seconds still.
+- Four coast-to-sprint surges in level mode, so the alignment can resolve.
+- The ladder in erg, up and then back down through the same targets.
+- Sit still for thirty seconds, then stop every meter at once.
+- Check `alignment_report()` shows `aligned`, not merely an offset of zero.
+
+Recording on separate head units:
 
 - One recorder per meter; ANT+ where the meter offers it.
 - One-second recording, auto-pause off, clocks set from GPS.

@@ -74,8 +74,8 @@ test_that("identical meters show no difference and zero spread", {
 
   expect_equal(out$bias_w, 0)
   expect_equal(out$gain_pc, 0)
-  expect_equal(out$loa_lower, 0)
-  expect_equal(out$loa_upper, 0)
+  expect_equal(out$loa_lo, 0)
+  expect_equal(out$loa_hi, 0)
 })
 
 test_that("coasting seconds are excluded from the pairing", {

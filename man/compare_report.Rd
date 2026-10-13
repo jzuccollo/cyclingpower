@@ -18,8 +18,9 @@ compare_report(
 )
 }
 \arguments{
-\item{spec}{Data frame with columns `path`, `run` and `source`, as built by
-[ride_spec_from_names()].}
+\item{spec}{Data frame with columns \code{path}, \code{run} and \code{source}, as built by
+\code{\link[=ride_spec_from_names]{ride_spec_from_names()}}, or the path to a directory of ride files named
+\verb{<run>_<source>}.}
 
 \item{output_file}{Path of the HTML file to write.}
 
@@ -51,9 +52,7 @@ across the power range, and — where one meter is common to more than one
 run — between meters that never rode together.
 }
 \examples{
-\dontrun{
-list.files("rides", full.names = TRUE) |>
-  ride_spec_from_names() |>
-  compare_report()
-}
+\dontshow{if (rlang::is_installed("rmarkdown") && rmarkdown::pandoc_available()) withAutoprint(\{ # examplesIf}
+compare_report(demo_rides(), tempfile(fileext = ".html"))
+\dontshow{\}) # examplesIf}
 }
