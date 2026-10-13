@@ -1,0 +1,80 @@
+# Simulate a power series with a given average and normalised power
+
+Inverts the metrics: rather than summarising a ride you rode, it builds
+a second-by-second series that would produce the numbers you name.
+
+## Usage
+
+``` r
+simulate_power(n_seconds, target_ap, target_np, smoothness = 0.98)
+```
+
+## Arguments
+
+- n_seconds:
+
+  Number of seconds to simulate.
+
+- target_ap:
+
+  Average power to hit, in watts.
+
+- target_np:
+
+  Normalised power to hit, in watts. Cannot be below `target_ap`.
+
+- smoothness:
+
+  Autocorrelation of the underlying effort, between 0 and 1. Higher
+  values give long sustained efforts, lower values a more punchy ride.
+  At a given normalised power this changes the character of the session,
+  not its statistics.
+
+## Value
+
+Numeric vector of per-second power values, hitting both targets exactly.
+Values are not rounded to whole watts, which would perturb them.
+
+## Details
+
+The problem is wildly underdetermined — thousands of seconds, two
+constraints — so the shape has to come from somewhere. Here it comes
+from an autocorrelated process, which is what riding looks like: you
+hold a power for minutes at a time rather than jumping about at random.
+Normalised power is defined on a thirty-second rolling mean, and
+second-by-second noise averages away inside that window, so a series of
+independent draws has a variability index of 1 no matter how wide its
+spread and noise alone cannot produce a normalised power above the
+average.
+
+Scale and shape are then solved separately, which is what makes both
+targets exact. Both metrics scale linearly with power, so their ratio
+does not depend on the overall level: raising the series to a power sets
+the variability index, and multiplying through afterwards sets the
+average without disturbing it. That leaves one monotone equation in one
+unknown rather than a search over every second of the ride.
+
+## Feasibility
+
+Nothing here knows about critical power, so nothing stops you naming
+targets no rider could hold. A normalised power above threshold
+sustained for an hour comes back as a series that would exhaust any W'
+several times over, and that is the target being impossible rather than
+the simulation being wrong: a *steady* hour at that power would fail the
+same test. Check the intensity you are asking for before reading
+anything into the shape that comes back.
+
+Within a feasible intensity the shape holds up, but its upper tail is
+lognormal and widens with the variability index, so a ragged ride posts
+sustained peaks — the best thirty seconds, not the peak second — beyond
+what the same ride's five-minute best implies. At a high variability
+index the series stops being a plausible ride and is only a series with
+the right two numbers.
+
+## Examples
+
+``` r
+ride <- withr::with_seed(1, simulate_power(3600, target_ap = 180, target_np = 220))
+c(average_power(ride), normalised_power(ride))
+#> [1] 180 220
+```
