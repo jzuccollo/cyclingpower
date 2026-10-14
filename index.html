@@ -59,63 +59,58 @@
 </h1></div>
 <!-- badges: start -->
 
-<p>Compare the readings of two or three power meters that recorded the same riding. Reads FIT, GPX and CSV files, puts them on a common clock, and reports how far apart the meters are overall and across the power range. A third meter that never rode alongside the others can be linked in through a bridge meter common to both sessions.</p>
+<p>Compare the readings of two or three power meters that recorded the same riding. Reads FIT, GPX and CSV files, puts them on a common clock, and reports how far apart the meters are overall and across the power range. A third meter can be linked in through a bridge meter common to both sessions.</p>
 <div class="section level2">
 <h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
 </h2>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">remotes</span><span class="fu">::</span><span class="fu">install_github</span><span class="op">(</span><span class="st">"jzuccollo/cyclingpower"</span><span class="op">)</span></span></code></pre></div>
-<p>FIT files need <a href="https://github.com/grimbough/FITfileR" class="external-link">FITfileR</a>, which is not on CRAN. It is declared in <code>Remotes:</code> so the command above fetches it. GPX and CSV need nothing extra. The app needs a few more packages:</p>
+<p>FIT files need <a href="https://github.com/grimbough/FITfileR" class="external-link">FITfileR</a>, which is not on CRAN. It is declared in <code>Remotes:</code> so the command above fetches it. GPX and CSV need nothing extra. Install dependencies with:</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"shiny"</span>, <span class="st">"bslib"</span>, <span class="st">"DT"</span>, <span class="st">"shinyFiles"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="usage">Usage<a class="anchor" aria-label="anchor" href="#usage"></a>
 </h2>
-<p>Name your files <code>&lt;run&gt;_&lt;source&gt;</code>, so <code>run1_kickr.fit</code> is the Kickr’s recording of run one, and hand <code><a href="reference/read_rides.html">read_rides()</a></code> the directory they are in.</p>
+<p>Name your files <code>&lt;run&gt;_&lt;source&gt;</code>, so <code>run1_kickr.fit</code> is the Kickr’s recording of run one, and pass <code><a href="reference/read_rides.html">read_rides()</a></code> the directory.</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/jzuccollo/cyclingpower" class="external-link">cyclingpower</a></span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">aligned</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/read_rides.html">read_rides</a></span><span class="op">(</span><span class="st">"rides"</span><span class="op">)</span> <span class="op">|&gt;</span> <span class="fu"><a href="reference/align_rides.html">align_rides</a></span><span class="op">(</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="reference/power_agreement.html">power_agreement</a></span><span class="op">(</span><span class="va">aligned</span><span class="op">)</span>      <span class="co"># overall difference, in watts and per cent</span></span>
+<span><span class="co"># run1: assioma reads 2.6% higher than kickr (95% CI 2.4 to 2.7, from 1,800 seconds)</span></span>
+<span></span>
 <span><span class="fu"><a href="reference/agreement_by_level.html">agreement_by_level</a></span><span class="op">(</span><span class="va">aligned</span><span class="op">)</span>   <span class="co"># the same, across the power range</span></span>
 <span><span class="fu"><a href="reference/chain_sources.html">chain_sources</a></span><span class="op">(</span><span class="va">aligned</span><span class="op">)</span>        <span class="co"># meters linked through a common bridge meter</span></span></code></pre></div>
-<p><code><a href="reference/power_agreement.html">power_agreement()</a></code> leads with the answer and keeps the arithmetic underneath:</p>
-<pre><code>run1: assioma reads 2.6% higher than kickr (95% CI 2.4 to 2.7, from 1,800 seconds)</code></pre>
 <p>Where the filenames do not carry the labels, build the table yourself with <code><a href="reference/ride_spec_from_names.html">ride_spec_from_names()</a></code> or by hand and pass that instead. <code><a href="reference/compare_report.html">compare_report()</a></code> runs the whole pipeline and writes an HTML report:</p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="reference/compare_report.html">compare_report</a></span><span class="op">(</span><span class="st">"rides"</span>, <span class="st">"power-comparison.html"</span><span class="op">)</span></span></code></pre></div>
-<p>To see all of it working on rides with known errors planted in them, run <code><a href="reference/demo_rides.html">demo_rides()</a></code> and follow <code><a href="articles/cyclingpower.html">vignette("cyclingpower")</a></code>.</p>
+<p>To see an example, run <code><a href="reference/demo_rides.html">demo_rides()</a></code> and follow <code><a href="articles/cyclingpower.html">vignette("cyclingpower")</a></code>.</p>
 </div>
 <div class="section level2">
 <h2 id="the-app">The app<a class="anchor" aria-label="anchor" href="#the-app"></a>
 </h2>
-<p><code><a href="reference/launch_app.html">launch_app()</a></code> opens a local web interface over the same pipeline: pick a directory, fix the run and source labels if the filenames don’t carry them, and adjust settings live. <strong>Load demo rides</strong> builds a worked example with known errors planted, also available outside the app from <code><a href="reference/demo_rides.html">demo_rides()</a></code>.</p>
-<p>The app can also record the meters itself over Web Bluetooth (Chrome or Edge, Record tab). One clock stamps every sample, so the sources share a timebase by construction. The radio path has no automated tests, so check the first session against a head unit you trust.</p>
+<p><code><a href="reference/launch_app.html">launch_app()</a></code> opens a local web interface with the same pipeline: pick a directory, fix the run and source labels if the filenames don’t carry them, and adjust settings. <strong>Load demo rides</strong> builds a worked example with known errors planted, also available outside the app from <code><a href="reference/demo_rides.html">demo_rides()</a></code>.</p>
+<p>The app can also record the meters itself over Web Bluetooth (Chrome or Edge, Record tab). The radio has no automated tests, so check the first session against a head unit you trust.</p>
 </div>
 <div class="section level2">
 <h2 id="recording">Recording<a class="anchor" aria-label="anchor" href="#recording"></a>
 </h2>
-<p>If each meter records to its own head unit, then on every unit: record every second (not “smart” recording), turn auto-pause off, let the clock set from GPS, and zero the meter after a warm-up. Ride four to six short surges from coasting so <code><a href="reference/align_rides.html">align_rides()</a></code> has features to cross-correlate, then five or six steady steps across the power range so <code><a href="reference/agreement_by_level.html">agreement_by_level()</a></code> has seconds in each bin.</p>
-<p>Recording in the app changes this: an erg ladder up and back down through five targets is now the best ride rather than the worst, since the offset is zero by construction. Keep a short block of surges anyway — <code>check_alignment()</code> cannot distinguish a featureless ride from a correctly stamped one, so the surges are what make a resolved zero mean something.</p>
-<p><code><a href="articles/recording_rides.html">vignette("recording_rides")</a></code> has the full protocol for both routes.</p>
+<p>If each meter records to its own head unit, then on every unit: record every second (not “smart” recording), turn auto-pause off, let the clock set from GPS, and zero the meter after a warm-up. Ride four to six short surges from coasting so <code><a href="reference/align_rides.html">align_rides()</a></code> has features to cross-correlate, then five or six steady steps across the power range so <code><a href="reference/agreement_by_level.html">agreement_by_level()</a></code> has time in each bin.</p>
+<p>Recording in the app fixes the alignment problem, so you only need an erg ladder up and back down, with enough time at each level. However, it’s worth keeping a short block of surges anyway, just in case.</p>
+<p><code><a href="articles/recording_rides.html">vignette("recording_rides")</a></code> has a ride protocol and can export a .zwo for you to ride in erg.</p>
 </div>
 <div class="section level2">
-<h2 id="why-alignment-comes-first">Why alignment comes first<a class="anchor" aria-label="anchor" href="#why-alignment-comes-first"></a>
+<h2 id="why-alignment-matters">Why alignment matters<a class="anchor" aria-label="anchor" href="#why-alignment-matters"></a>
 </h2>
-<p>Independent head units can differ by several seconds. Differencing on nominal timestamps then compares one moment’s power against another’s, which inflates the spread and shifts the mean difference — and the result looks plausible. On a test ride with a true 3 per cent gain and a seven-second offset, differencing raw timestamps reports 6.2 per cent.</p>
-<p><code><a href="reference/align_rides.html">align_rides()</a></code> recovers the offset by cross-correlating the power traces and reports what it found. Where a ride was too steady to lock onto it says so and falls back to the recorded timestamps rather than guessing.</p>
+<p>Independent head units can differ by several seconds. Differencing on nominal timestamps then compares one moment’s power against another’s, which inflates the spread and shifts the mean difference.</p>
+<p><code><a href="reference/align_rides.html">align_rides()</a></code> recovers the offset by cross-correlating the power traces. The main challenge is where a turbo ride is too steady to lock onto it. Then it will say so and fall back to the recorded timestamps.</p>
 </div>
 <div class="section level2">
-<h2 id="chaining-a-third-meter">Chaining a third meter<a class="anchor" aria-label="anchor" href="#chaining-a-third-meter"></a>
+<h2 id="chaining-a-third-meter-bridging">Chaining a third meter (bridging)<a class="anchor" aria-label="anchor" href="#chaining-a-third-meter-bridging"></a>
 </h2>
-<p>Run one carries meters A and B, run two carries B and C, and you want A against C. B is the bridge: each run gives a gain relative to it, and the difference between those gains is A against C. <code><a href="reference/chain_sources.html">chain_sources()</a></code> marks these as <code>chained</code> rather than <code>direct</code>, because they assume B read the same on both days — which the ride files cannot test. <code><a href="reference/chain_sources.html">chain_report()</a></code> states the assumption and reports whether the two runs covered comparable power.</p>
-</div>
-<div class="section level2">
-<h2 id="stability">Stability<a class="anchor" aria-label="anchor" href="#stability"></a>
-</h2>
-<p>Version 0.4.0, and the version number is doing real work: the analysis functions — <code><a href="reference/read_rides.html">read_rides()</a></code>, <code><a href="reference/align_rides.html">align_rides()</a></code>, <code><a href="reference/power_agreement.html">power_agreement()</a></code>, <code><a href="reference/agreement_by_level.html">agreement_by_level()</a></code>, <code><a href="reference/chain_sources.html">chain_sources()</a></code> and the plots — are settled and changes to them will be listed in <a href="NEWS.html">NEWS.md</a>. The recording half is newer and its shape may still move. The radio path has no automated tests and cannot have any, so check your first recorded session against a head unit you trust before relying on it.</p>
+<p>Run one carries meters A and B, run two carries B and C, and you want A against C. B is the bridge and each run gives a gain relative to it, so the difference between those gains is A against C. <code><a href="reference/chain_sources.html">chain_sources()</a></code> marks these as <code>chained</code> rather than <code>direct</code>, because they assume B read the same on both days. <code><a href="reference/chain_sources.html">chain_report()</a></code> calculates and reports whether the two runs covered comparable power.</p>
 </div>
 <div class="section level2">
 <h2 id="licence">Licence<a class="anchor" aria-label="anchor" href="#licence"></a>
